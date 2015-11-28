@@ -10,7 +10,7 @@ end
 
 ## build ffmpeg
 
-SDK_VERSION='7.1'
+SDK_VERSION='9.1'
 
 XCODE_PATH='/Applications/Xcode.app/Contents/Developer/Platforms'
 GCC_PATH='/Applications/XCode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang'
@@ -27,8 +27,8 @@ FFMPEG_BUILD_ARGS_SIM = [
 '--disable-mmx',
 '--arch=i386',
 '--cpu=i386',
-"--extra-ldflags='-arch i386 -miphoneos-version-min=6.0'",
-"--extra-cflags='-arch i386 -miphoneos-version-min=6.0'",
+"--extra-ldflags='-arch i386 -miphoneos-version-min=7.0'",
+"--extra-cflags='-arch i386 -miphoneos-version-min=7.0'",
 '--disable-asm',
 ]
 
@@ -36,8 +36,8 @@ FFMPEG_BUILD_ARGS_ARMV7 = [
 '--arch=arm',
 '--cpu=cortex-a8',
 '--enable-pic',
-"--extra-cflags='-arch armv7 -miphoneos-version-min=6.0'",
-"--extra-ldflags='-arch armv7 -miphoneos-version-min=6.0'",
+"--extra-cflags='-arch armv7 -miphoneos-version-min=7.0'",
+"--extra-ldflags='-arch armv7 -miphoneos-version-min=7.0'",
 "--extra-cflags='-mfpu=neon -mfloat-abi=softfp'",
 '--enable-neon',
 # '--disable-neon',
@@ -53,8 +53,8 @@ FFMPEG_BUILD_ARGS_ARMV7S = [
 '--arch=arm',
 '--cpu=cortex-a9',
 '--enable-pic',
-"--extra-cflags='-arch armv7s -miphoneos-version-min=6.0'",
-"--extra-ldflags='-arch armv7s -miphoneos-version-min=6.0'",
+"--extra-cflags='-arch armv7s -miphoneos-version-min=7.0'",
+"--extra-ldflags='-arch armv7s -miphoneos-version-min=7.0'",
 "--extra-cflags='-mfpu=neon -mfloat-abi=softfp'",
 '--enable-neon',
 # '--disable-neon',
@@ -70,8 +70,8 @@ FFMPEG_BUILD_ARGS_ARM64 = [
 '--arch=arm64',
 # '--cpu=cortex-a9',
 '--enable-pic',
-"--extra-cflags='-arch arm64 -miphoneos-version-min=6.0'",
-"--extra-ldflags='-arch arm64 -miphoneos-version-min=6.0'",
+"--extra-cflags='-arch arm64 -miphoneos-version-min=7.0'",
+"--extra-ldflags='-arch arm64 -miphoneos-version-min=7.0'",
 "--extra-cflags='-mfpu=neon -mfloat-abi=softfp'",
 '--enable-neon',
 # '--disable-neon',
@@ -157,7 +157,7 @@ def buildArch(arch)
 	dest = ensureDir('FFmpeg/' + arch)
 	
 	system_or_exit "cd FFmpeg; ./configure #{args}"
-	system_or_exit "cd FFmpeg; make"	
+	system_or_exit "cd FFmpeg; make -j4"	
 	moveLibs(dest)	
 	system_or_exit "cd FFmpeg; [ -f -.d ] && rm -- -.d; make clean"
 
