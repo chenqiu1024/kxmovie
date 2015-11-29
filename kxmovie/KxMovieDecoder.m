@@ -1532,7 +1532,8 @@ static int interrupt_callback(void *ctx);
         av_free_packet(&packet);
     }
     
-    totalDecodedDuration += minDuration;
+    ///!!!For Debug
+    totalDecodedDuration += decodedDuration;
     float ratio = (totalDecodeTime/totalDecodedDuration);
     //    const float DestRatio = 0.8100;
     //    if (ratio < DestRatio)
