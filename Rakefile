@@ -98,6 +98,7 @@ FFMPEG_BUILD_ARGS = [
 
 '--disable-gpl',
 '--disable-nonfree',
+'--disable-avdevice',
 ]
 
 FFMPEG_LIBS = [
