@@ -29,7 +29,7 @@
         self.tabBarItem = [[UITabBarItem alloc] initWithTabBarSystemItem:UITabBarSystemItemFeatured tag: 0];
         
         _remoteMovies = @[
-
+@"rtsp://218.204.223.237:554/live/1/66251FC11353191F/e7ooqwcfbqjoo80j.sdp",
 //            @"http://eric.cast.ro/stream2.flv",
 //            @"http://liveipad.wasu.cn/cctv2_ipad/z.m3u8",
             @"http://www.wowza.com/_h264/BigBuckBunny_175k.mov",
@@ -231,13 +231,13 @@
     if ([path.pathExtension isEqualToString:@"wmv"])
         parameters[KxMovieParameterMinBufferedDuration] = @(5.0);
     
-    // disable deinterlacing for iPhone, because it's complex operation can cause stuttering
+    // disable deinterlacing for iPhone, because it's complex operation can cause stuttering ///???
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
         parameters[KxMovieParameterDisableDeinterlacing] = @(YES);
     
-    // disable buffering
-    //parameters[KxMovieParameterMinBufferedDuration] = @(0.0f);
-    //parameters[KxMovieParameterMaxBufferedDuration] = @(0.0f);
+    // disable buffering ///!!!
+//    parameters[KxMovieParameterMinBufferedDuration] = @(0.0f);
+//    parameters[KxMovieParameterMaxBufferedDuration] = @(0.0f);
     
     KxMovieViewController *vc = [KxMovieViewController movieViewControllerWithContentPath:path
                                                                                parameters:parameters];

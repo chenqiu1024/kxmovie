@@ -80,10 +80,10 @@ static NSString * errorMessage (kxMovieError errorCode)
 static BOOL audioCodecIsSupported(AVCodecContext *audio)
 {
     if (audio->sample_fmt == AV_SAMPLE_FMT_S16) {
-
+        
         id<KxAudioManager> audioManager = [KxAudioManager audioManager];
         return  (int)audioManager.samplingRate == audio->sample_rate &&
-                audioManager.numOutputChannels == audio->channels;
+        audioManager.numOutputChannels == audio->channels;
     }
     return NO;
 }
@@ -208,7 +208,7 @@ static void testConvertYUV420pToRGB(AVFrame * frame, uint8_t *outbuf, int linesi
             
             dst2[3*i + 3] = r4;
             dst2[3*i + 4] = g4;
-            dst2[3*i + 5] = b4;            
+            dst2[3*i + 5] = b4;
         }
     }
 }
@@ -224,12 +224,12 @@ static void avStreamFPSTimeBase(AVStream *st, CGFloat defaultTimeBase, CGFloat *
         timebase = av_q2d(st->codec->time_base);
     else
         timebase = defaultTimeBase;
-        
+    
     if (st->codec->ticks_per_frame != 1) {
         LoggerStream(0, @"WARNING: st.codec.ticks_per_frame=%d", st->codec->ticks_per_frame);
-        //timebase *= st->codec->ticks_per_frame;
+        //        timebase *= st->codec->ticks_per_frame;///???
     }
-         
+    
     if (st->avg_frame_rate.den && st->avg_frame_rate.num)
         fps = av_q2d(st->avg_frame_rate);
     else if (st->r_frame_rate.den && st->r_frame_rate.num)
@@ -381,7 +381,7 @@ static int interrupt_callback(void *ctx);
     }
     
     return image;
-
+    
 }
 @end
 
@@ -398,7 +398,7 @@ static int interrupt_callback(void *ctx);
 @interface KxMovieDecoder () {
     
     AVFormatContext     *_formatCtx;
-	AVCodecContext      *_videoCodecCtx;
+    AVCodecContext      *_videoCodecCtx;
     AVCodecContext      *_audioCodecCtx;
     AVCodecContext      *_subtitleCodecCtx;
     AVFrame             *_videoFrame;
@@ -406,7 +406,7 @@ static int interrupt_callback(void *ctx);
     NSInteger           _videoStream;
     NSInteger           _audioStream;
     NSInteger           _subtitleStream;
-	AVPicture           _picture;
+    AVPicture           _picture;
     BOOL                _pictureValid;
     struct SwsContext   *_swsContext;
     CGFloat             _videoTimeBase;
@@ -505,7 +505,7 @@ static int interrupt_callback(void *ctx);
     if (_audioStream == -1)
         return -1;
     NSNumber *n = [NSNumber numberWithInteger:_audioStream];
-    return [_audioStreams indexOfObject:n];        
+    return [_audioStreams indexOfObject:n];
 }
 
 - (void) setSelectedAudioStream:(NSInteger)selectedAudioStream
@@ -565,7 +565,7 @@ static int interrupt_callback(void *ctx);
         NSMutableDictionary *md = [NSMutableDictionary dictionary];
         
         if (_formatCtx) {
-        
+            
             const char *formatName = _formatCtx->iformat->name;
             [md setValue: [NSString stringWithCString:formatName encoding:NSUTF8StringEncoding]
                   forKey: @"format"];
@@ -581,15 +581,15 @@ static int interrupt_callback(void *ctx);
                 NSMutableDictionary *md1 = [NSMutableDictionary dictionary];
                 
                 AVDictionaryEntry *tag = NULL;
-                 while((tag = av_dict_get(_formatCtx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-                     
-                     [md1 setValue: [NSString stringWithCString:tag->value encoding:NSUTF8StringEncoding]
-                            forKey: [NSString stringWithCString:tag->key encoding:NSUTF8StringEncoding]];
-                 }
+                while((tag = av_dict_get(_formatCtx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+                    
+                    [md1 setValue: [NSString stringWithCString:tag->value encoding:NSUTF8StringEncoding]
+                           forKey: [NSString stringWithCString:tag->key encoding:NSUTF8StringEncoding]];
+                }
                 
                 [md setValue: [md1 copy] forKey: @"metadata"];
             }
-        
+            
             char buf[256];
             
             if (_videoStreams.count) {
@@ -623,7 +623,7 @@ static int interrupt_callback(void *ctx);
                     [ms appendString:s];
                     
                     [ma addObject:ms.copy];
-                }                
+                }
                 md[@"audio"] = ma.copy;
             }
             
@@ -645,12 +645,12 @@ static int interrupt_callback(void *ctx);
                     [ms appendString:s];
                     
                     [ma addObject:ms.copy];
-                }               
+                }
                 md[@"subtitles"] = ma.copy;
             }
             
         }
-                
+        
         _info = [md copy];
     }
     
@@ -686,7 +686,7 @@ static int interrupt_callback(void *ctx);
             return st->start_time * _audioTimeBase;
         return 0;
     }
-        
+    
     return 0;
 }
 
@@ -736,14 +736,14 @@ static int interrupt_callback(void *ctx);
     
     if (errCode == kxMovieErrorNone) {
         
-        kxMovieError videoErr = [self openVideoStream];
-        kxMovieError audioErr = [self openAudioStream];
+        kxMovieError videoErr = [self openVideoStreams];
+        kxMovieError audioErr = [self openAudioStreams];
         
         _subtitleStream = -1;
         
         if (videoErr != kxMovieErrorNone &&
             audioErr != kxMovieErrorNone) {
-         
+            
             errCode = videoErr; // both fails
             
         } else {
@@ -761,7 +761,7 @@ static int interrupt_callback(void *ctx);
             *perror = kxmovieError(errCode, errMsg);
         return NO;
     }
-        
+    
     return YES;
 }
 
@@ -779,7 +779,11 @@ static int interrupt_callback(void *ctx);
         formatCtx->interrupt_callback = cb;
     }
     
-    if (avformat_open_input(&formatCtx, [path cStringUsingEncoding: NSUTF8StringEncoding], NULL, NULL) < 0) {
+    //有三种传输方式：tcp udp_multicast udp，强制采用tcp传输
+    AVDictionary* options = NULL;
+    av_dict_set(&options, "rtsp_transport", "tcp", 0);
+    
+    if (avformat_open_input(&formatCtx, [path cStringUsingEncoding: NSUTF8StringEncoding], NULL, &options) < 0) {
         
         if (formatCtx)
             avformat_free_context(formatCtx);
@@ -791,14 +795,14 @@ static int interrupt_callback(void *ctx);
         avformat_close_input(&formatCtx);
         return kxMovieErrorStreamInfoNotFound;
     }
-
-    av_dump_format(formatCtx, 0, [path.lastPathComponent cStringUsingEncoding: NSUTF8StringEncoding], false);
+    
+    av_dump_format(formatCtx, 0, [path.lastPathComponent cStringUsingEncoding: NSUTF8StringEncoding], false);///???
     
     _formatCtx = formatCtx;
     return kxMovieErrorNone;
 }
 
-- (kxMovieError) openVideoStream
+- (kxMovieError) openVideoStreams
 {
     kxMovieError errCode = kxMovieErrorStreamNotFound;
     _videoStream = -1;
@@ -807,9 +811,9 @@ static int interrupt_callback(void *ctx);
     for (NSNumber *n in _videoStreams) {
         
         const NSUInteger iStream = n.integerValue;
-
-        if (0 == (_formatCtx->streams[iStream]->disposition & AV_DISPOSITION_ATTACHED_PIC)) {
         
+        if (0 == (_formatCtx->streams[iStream]->disposition & AV_DISPOSITION_ATTACHED_PIC)) {
+            
             errCode = [self openVideoStream: iStream];
             if (errCode == kxMovieErrorNone)
                 break;
@@ -824,7 +828,7 @@ static int interrupt_callback(void *ctx);
 }
 
 - (kxMovieError) openVideoStream: (NSInteger) videoStream
-{    
+{
     // get a pointer to the codec context for the video stream
     AVCodecContext *codecCtx = _formatCtx->streams[videoStream]->codec;
     
@@ -841,9 +845,9 @@ static int interrupt_callback(void *ctx);
     // open codec
     if (avcodec_open2(codecCtx, codec, NULL) < 0)
         return kxMovieErrorOpenCodec;
-        
+    
     _videoFrame = av_frame_alloc();
-
+    
     if (!_videoFrame) {
         avcodec_close(codecCtx);
         return kxMovieErrorAllocateFrame;
@@ -869,34 +873,34 @@ static int interrupt_callback(void *ctx);
     return kxMovieErrorNone;
 }
 
-- (kxMovieError) openAudioStream
+- (kxMovieError) openAudioStreams
 {
     kxMovieError errCode = kxMovieErrorStreamNotFound;
     _audioStream = -1;
     _audioStreams = collectStreams(_formatCtx, AVMEDIA_TYPE_AUDIO);
     for (NSNumber *n in _audioStreams) {
-    
+        
         errCode = [self openAudioStream: n.integerValue];
         if (errCode == kxMovieErrorNone)
             break;
-    }    
+    }
     return errCode;
 }
 
 - (kxMovieError) openAudioStream: (NSInteger) audioStream
-{   
+{
     AVCodecContext *codecCtx = _formatCtx->streams[audioStream]->codec;
     SwrContext *swrContext = NULL;
-                   
+    
     AVCodec *codec = avcodec_find_decoder(codecCtx->codec_id);
     if(!codec)
         return kxMovieErrorCodecNotFound;
-        
+    
     if (avcodec_open2(codecCtx, codec, NULL) < 0)
-         return kxMovieErrorOpenCodec;
+        return kxMovieErrorOpenCodec;
     
     if (!audioCodecIsSupported(codecCtx)) {
-
+        
         id<KxAudioManager> audioManager = [KxAudioManager audioManager];
         swrContext = swr_alloc_set_opts(NULL,
                                         av_get_default_channel_layout(audioManager.numOutputChannels),
@@ -913,14 +917,14 @@ static int interrupt_callback(void *ctx);
             
             if (swrContext)
                 swr_free(&swrContext);
-             avcodec_close(codecCtx);
-
+            avcodec_close(codecCtx);
+            
             return kxMovieErroReSampler;
         }
     }
     
     _audioFrame = av_frame_alloc();
-
+    
     if (!_audioFrame) {
         if (swrContext)
             swr_free(&swrContext);
@@ -942,7 +946,7 @@ static int interrupt_callback(void *ctx);
                 _audioTimeBase,
                 _swrContext ? @"resample" : @"");
     
-    return kxMovieErrorNone; 
+    return kxMovieErrorNone;
 }
 
 - (kxMovieError) openSubtitleStream: (NSInteger) subtitleStream
@@ -966,14 +970,14 @@ static int interrupt_callback(void *ctx);
     _subtitleCodecCtx = codecCtx;
     
     LoggerStream(1, @"subtitle codec: '%s' mode: %d enc: %s",
-                codecDesc->name,
-                codecCtx->sub_charenc_mode,
-                codecCtx->sub_charenc);
+                 codecDesc->name,
+                 codecCtx->sub_charenc_mode,
+                 codecCtx->sub_charenc);
     
     _subtitleASSEvents = -1;
     
     if (codecCtx->subtitle_header_size) {
-                
+        
         NSString *s = [[NSString alloc] initWithBytes:codecCtx->subtitle_header
                                                length:codecCtx->subtitle_header_size
                                              encoding:NSASCIIStringEncoding];
@@ -1033,7 +1037,7 @@ static int interrupt_callback(void *ctx);
 - (void) closeAudioStream
 {
     _audioStream = -1;
-        
+    
     if (_swrBuffer) {
         
         free(_swrBuffer);
@@ -1046,7 +1050,7 @@ static int interrupt_callback(void *ctx);
         swr_free(&_swrContext);
         _swrContext = NULL;
     }
-        
+    
     if (_audioFrame) {
         
         av_free(_audioFrame);
@@ -1093,10 +1097,10 @@ static int interrupt_callback(void *ctx);
                                     _videoCodecCtx->width,
                                     _videoCodecCtx->height) == 0;
     
-	if (!_pictureValid)
+    if (!_pictureValid)
         return NO;
-
-	_swsContext = sws_getCachedContext(_swsContext,
+    
+    _swsContext = sws_getCachedContext(_swsContext,
                                        _videoCodecCtx->width,
                                        _videoCodecCtx->height,
                                        _videoCodecCtx->pix_fmt,
@@ -1105,7 +1109,7 @@ static int interrupt_callback(void *ctx);
                                        PIX_FMT_RGB24,
                                        SWS_FAST_BILINEAR,
                                        NULL, NULL, NULL);
-        
+    
     return _swsContext != NULL;
 }
 
@@ -1117,7 +1121,6 @@ static int interrupt_callback(void *ctx);
     KxVideoFrame *frame;
     
     if (_videoFrameFormat == KxVideoFrameFormatYUV) {
-            
         KxVideoFrameYUV * yuvFrame = [[KxVideoFrameYUV alloc] init];
         
         yuvFrame.luma = copyFrameData(_videoFrame->data[0],
@@ -1134,11 +1137,9 @@ static int interrupt_callback(void *ctx);
                                          _videoFrame->linesize[2],
                                          _videoCodecCtx->width / 2,
                                          _videoCodecCtx->height / 2);
-        
         frame = yuvFrame;
-    
     } else {
-    
+        
         if (!_swsContext &&
             ![self setupScaler]) {
             
@@ -1159,13 +1160,13 @@ static int interrupt_callback(void *ctx);
         
         rgbFrame.linesize = _picture.linesize[0];
         rgbFrame.rgb = [NSData dataWithBytes:_picture.data[0]
-                                    length:rgbFrame.linesize * _videoCodecCtx->height];
+                                      length:rgbFrame.linesize * _videoCodecCtx->height];
         frame = rgbFrame;
-    }    
+    }
     
     frame.width = _videoCodecCtx->width;
     frame.height = _videoCodecCtx->height;
-    frame.position = av_frame_get_best_effort_timestamp(_videoFrame) * _videoTimeBase;
+    frame.position = av_frame_get_best_effort_timestamp(_videoFrame) * _videoTimeBase;///???
     
     const int64_t frameDuration = av_frame_get_pkt_duration(_videoFrame);
     if (frameDuration) {
@@ -1182,7 +1183,7 @@ static int interrupt_callback(void *ctx);
         // sometimes, ffmpeg unable to determine a frame duration
         // as example yuvj420p stream from web camera
         frame.duration = 1.0 / _fps;
-    }    
+    }
     
 #if 0
     LoggerVideo(2, @"VFD: %.4f %.4f | %lld ",
@@ -1209,7 +1210,7 @@ static int interrupt_callback(void *ctx);
     if (_swrContext) {
         
         const NSUInteger ratio = MAX(1, audioManager.samplingRate / _audioCodecCtx->sample_rate) *
-                                 MAX(1, audioManager.numOutputChannels / _audioCodecCtx->channels) * 2;
+        MAX(1, audioManager.numOutputChannels / _audioCodecCtx->channels) * 2;
         
         const int bufSize = av_samples_get_buffer_size(NULL,
                                                        audioManager.numOutputChannels,
@@ -1242,7 +1243,7 @@ static int interrupt_callback(void *ctx);
         audioData = _swrBuffer;
         
     } else {
-    
+        
         if (_audioCodecCtx->sample_fmt != AV_SAMPLE_FMT_S16) {
             NSAssert(false, @"bucheck, audio format is invalid");
             return nil;
@@ -1286,7 +1287,7 @@ static int interrupt_callback(void *ctx);
     NSMutableString *ms = [NSMutableString string];
     
     for (NSUInteger i = 0; i < pSubtitle->num_rects; ++i) {
-       
+        
         AVSubtitleRect *rect = pSubtitle->rects[i];
         if (rect) {
             
@@ -1305,7 +1306,7 @@ static int interrupt_callback(void *ctx);
                         
                         s = [KxMovieSubtitleASSParser removeCommandsFromEventText: fields.lastObject];
                         if (s.length) [ms appendString:s];
-                    }                    
+                    }
                 }
             }
         }
@@ -1315,18 +1316,18 @@ static int interrupt_callback(void *ctx);
         return nil;
     
     KxSubtitleFrame *frame = [[KxSubtitleFrame alloc] init];
-    frame.text = [ms copy];   
+    frame.text = [ms copy];
     frame.position = pSubtitle->pts / AV_TIME_BASE + pSubtitle->start_display_time;
     frame.duration = (CGFloat)(pSubtitle->end_display_time - pSubtitle->start_display_time) / 1000.f;
     
 #if 0
     LoggerStream(2, @"SUB: %.4f %.4f | %@",
-          frame.position,
-          frame.duration,
-          frame.text);
+                 frame.position,
+                 frame.duration,
+                 frame.text);
 #endif
     
-    return frame;    
+    return frame;
 }
 
 - (BOOL) interruptDecoder
@@ -1357,7 +1358,7 @@ static int interrupt_callback(void *ctx);
     if (_videoStream == -1 &&
         _audioStream == -1)
         return nil;
-
+    
     NSMutableArray *result = [NSMutableArray array];
     
     AVPacket packet;
@@ -1365,6 +1366,10 @@ static int interrupt_callback(void *ctx);
     CGFloat decodedDuration = 0;
     
     BOOL finished = NO;
+    
+    ///!!!For Debug
+    static double totalDecodeTime = 0;
+    static double totalDecodedDuration = 0;
     
     while (!finished) {
         
@@ -1374,16 +1379,37 @@ static int interrupt_callback(void *ctx);
         }
         
         if (packet.stream_index ==_videoStream) {
-           
+            
             int pktSize = packet.size;
             
             while (pktSize > 0) {
-                            
+                ///!!!For Debug
+                NSTimeInterval beforeDecode = [NSDate timeIntervalSinceReferenceDate];
+//                static bool drop = false;
+//                if (drop)
+//                {
+//                    _position = packet.pts * _videoTimeBase;
+//                    decodedDuration += packet.duration * _videoTimeBase;
+//                    if (decodedDuration > minDuration)
+//                        finished = YES;
+//                    
+//                    drop = false;
+//                    break;
+//                }
+//                else
+//                {
+//                    drop = true;
+//                }
+                
                 int gotframe = 0;
                 int len = avcodec_decode_video2(_videoCodecCtx,
                                                 _videoFrame,
                                                 &gotframe,
                                                 &packet);
+                
+                ///!!!For Debug
+                NSTimeInterval afterDecode = [NSDate timeIntervalSinceReferenceDate];
+                totalDecodeTime += (afterDecode - beforeDecode);
                 
                 if (len < 0) {
                     LoggerVideo(0, @"decode video error, skip packet");
@@ -1394,7 +1420,7 @@ static int interrupt_callback(void *ctx);
                     
                     if (!_disableDeinterlacing &&
                         _videoFrame->interlaced_frame) {
-
+                        
                         avpicture_deinterlace((AVPicture*)_videoFrame,
                                               (AVPicture*)_videoFrame,
                                               _videoCodecCtx->pix_fmt,
@@ -1413,7 +1439,7 @@ static int interrupt_callback(void *ctx);
                             finished = YES;
                     }
                 }
-                                
+                
                 if (0 == len)
                     break;
                 
@@ -1421,14 +1447,14 @@ static int interrupt_callback(void *ctx);
             }
             
         } else if (packet.stream_index == _audioStream) {
-                        
+            
             int pktSize = packet.size;
             
             while (pktSize > 0) {
                 
                 int gotframe = 0;
                 int len = avcodec_decode_audio4(_audioCodecCtx,
-                                                _audioFrame,                                                
+                                                _audioFrame,
                                                 &gotframe,
                                                 &packet);
                 
@@ -1443,7 +1469,7 @@ static int interrupt_callback(void *ctx);
                     if (frame) {
                         
                         [result addObject:frame];
-                                                
+                        
                         if (_videoStream == -1) {
                             
                             _position = frame.position;
@@ -1463,7 +1489,7 @@ static int interrupt_callback(void *ctx);
         } else if (packet.stream_index == _artworkStream) {
             
             if (packet.size) {
-
+                
                 KxArtworkFrame *frame = [[KxArtworkFrame alloc] init];
                 frame.picture = [NSData dataWithBytes:packet.data length:packet.size];
                 [result addObject:frame];
@@ -1478,9 +1504,9 @@ static int interrupt_callback(void *ctx);
                 AVSubtitle subtitle;
                 int gotsubtitle = 0;
                 int len = avcodec_decode_subtitle2(_subtitleCodecCtx,
-                                                  &subtitle,
-                                                  &gotsubtitle,
-                                                  &packet);
+                                                   &subtitle,
+                                                   &gotsubtitle,
+                                                   &packet);
                 
                 if (len < 0) {
                     LoggerStream(0, @"decode subtitle error, skip packet");
@@ -1502,10 +1528,19 @@ static int interrupt_callback(void *ctx);
                 pktSize -= len;
             }
         }
-
+        
         av_free_packet(&packet);
-	}
-
+    }
+    
+    totalDecodedDuration += minDuration;
+    float ratio = (totalDecodeTime/totalDecodedDuration);
+    //    const float DestRatio = 0.8100;
+    //    if (ratio < DestRatio)
+    //    {
+    //        [NSThread sleepForTimeInterval:(totalDecodedDuration * DestRatio - totalDecodeTime)];
+    //    }
+    NSLog(@"totalDecodeTime / totalDecodedDuration = (%lf / %lf) = %lf", totalDecodeTime, totalDecodedDuration, ratio);///!!!
+    
     return result;
 }
 

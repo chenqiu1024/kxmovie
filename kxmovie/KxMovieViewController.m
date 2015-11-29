@@ -127,7 +127,7 @@ static NSMutableDictionary * gHistory;
     CGFloat             _bufferedDuration;
     CGFloat             _minBufferedDuration;
     CGFloat             _maxBufferedDuration;
-    BOOL                _buffered;
+    BOOL                _buffered;///??? Should be named "buffering"?
     
     BOOL                _savedIdleTimer;
     
@@ -1011,7 +1011,7 @@ _messageLabel.hidden = YES;
     __weak KxMovieViewController *weakSelf = self;
     __weak KxMovieDecoder *weakDecoder = _decoder;
     
-    const CGFloat duration = _decoder.isNetwork ? .0f : 0.1f;
+    const CGFloat duration = _decoder.isNetwork ? .0f : 0.1f;///!!!
     
     self.decoding = YES;
     dispatch_async(_dispatchQueue, ^{
@@ -1032,10 +1032,8 @@ _messageLabel.hidden = YES;
                 __strong KxMovieDecoder *decoder = weakDecoder;
                 
                 if (decoder && (decoder.validVideo || decoder.validAudio)) {
-                    
                     NSArray *frames = [decoder decodeFrames:duration];
                     if (frames.count) {
-                        
                         __strong KxMovieViewController *strongSelf = weakSelf;
                         if (strongSelf)
                             good = [strongSelf addFrames:frames];
@@ -1071,7 +1069,6 @@ _messageLabel.hidden = YES;
         (_decoder.validAudio ? _audioFrames.count : 0);
         
         if (0 == leftFrames) {
-            
             if (_decoder.isEOF) {
                 
                 [self pause];
@@ -1123,8 +1120,8 @@ _messageLabel.hidden = YES;
     NSTimeInterval dTime = now - _tickCorrectionTime;
     NSTimeInterval correction = dPosition - dTime;
     
-    //if ((_tickCounter % 200) == 0)
-    //    LoggerStream(1, @"tick correction %.4f", correction);
+    if ((_tickCounter % 200) == 0)
+        LoggerStream(1, @"tick correction %.4f", correction);
     
     if (correction > 1.f || correction < -1.f) {
         

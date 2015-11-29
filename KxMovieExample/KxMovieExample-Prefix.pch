@@ -21,7 +21,7 @@
 
 
 // Which logger system to use NSLogger or NSLog.
-#define USE_NSLOGGER
+//#define USE_NSLOGGER
 
 #ifdef DEBUG
 #ifdef USE_NSLOGGER
