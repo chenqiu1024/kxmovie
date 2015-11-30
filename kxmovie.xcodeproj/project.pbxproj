@@ -8,9 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8704657C16F6ECA000D4083E /* libiconv.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8704657A16F6EC9100D4083E /* libiconv.dylib */; };
-		87E793FD16390F6D000A0848 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E793FC16390F6D000A0848 /* UIKit.framework */; };
 		87E793FF16390F6D000A0848 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E793FE16390F6D000A0848 /* Foundation.framework */; };
-		87E7940116390F6D000A0848 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E7940016390F6D000A0848 /* CoreGraphics.framework */; };
 		87E7940916390F6D000A0848 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 87E7940816390F6D000A0848 /* main.m */; };
 		87E7940F16390F6D000A0848 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 87E7940E16390F6D000A0848 /* Default.png */; };
 		87E7941116390F6D000A0848 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 87E7941016390F6D000A0848 /* Default@2x.png */; };
@@ -46,6 +44,10 @@
 		87FD6191163A75DC0090956E /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E79437163910D0000A0848 /* QuartzCore.framework */; };
 		87FD6192163A75DF0090956E /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E79439163910EA000A0848 /* Accelerate.framework */; };
 		87FD6193163A75E10090956E /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E79435163910CA000A0848 /* OpenGLES.framework */; };
+		BB167A5C1C0BEB37008BB8CA /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5B1C0BEB37008BB8CA /* CoreMedia.framework */; };
+		BB167A5E1C0BEB41008BB8CA /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5D1C0BEB41008BB8CA /* VideoToolbox.framework */; };
+		BB167A601C0BEB4C008BB8CA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5F1C0BEB4C008BB8CA /* CoreGraphics.framework */; };
+		BB167A621C0BEB55008BB8CA /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A611C0BEB55008BB8CA /* UIKit.framework */; };
 		FD20733F5D6A4546A9836E2D /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49D953B9D2DC48FBB580C6AC /* libPods.a */; };
 /* End PBXBuildFile section */
 
@@ -103,6 +105,10 @@
 		87E7945216391BD2000A0848 /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/System/Library/Frameworks/MediaPlayer.framework; sourceTree = DEVELOPER_DIR; };
 		87E7946116394577000A0848 /* KxAudioManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KxAudioManager.h; sourceTree = "<group>"; };
 		87FD6175163A75440090956E /* libkxmovie.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libkxmovie.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB167A5B1C0BEB37008BB8CA /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/CoreMedia.framework; sourceTree = DEVELOPER_DIR; };
+		BB167A5D1C0BEB41008BB8CA /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/VideoToolbox.framework; sourceTree = DEVELOPER_DIR; };
+		BB167A5F1C0BEB4C008BB8CA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
+		BB167A611C0BEB55008BB8CA /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +116,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB167A621C0BEB55008BB8CA /* UIKit.framework in Frameworks */,
+				BB167A601C0BEB4C008BB8CA /* CoreGraphics.framework in Frameworks */,
+				BB167A5E1C0BEB41008BB8CA /* VideoToolbox.framework in Frameworks */,
+				BB167A5C1C0BEB37008BB8CA /* CoreMedia.framework in Frameworks */,
 				8704657C16F6ECA000D4083E /* libiconv.dylib in Frameworks */,
 				87E7945116391BC1000A0848 /* libz.dylib in Frameworks */,
 				87E7944A16391B9E000A0848 /* libavcodec.a in Frameworks */,
@@ -117,9 +127,7 @@
 				87E7944D16391B9E000A0848 /* libavutil.a in Frameworks */,
 				87E7944E16391B9E000A0848 /* libswresample.a in Frameworks */,
 				87E7944F16391B9E000A0848 /* libswscale.a in Frameworks */,
-				87E793FD16390F6D000A0848 /* UIKit.framework in Frameworks */,
 				87E793FF16390F6D000A0848 /* Foundation.framework in Frameworks */,
-				87E7940116390F6D000A0848 /* CoreGraphics.framework in Frameworks */,
 				87E7945416391BDC000A0848 /* MediaPlayer.framework in Frameworks */,
 				87E7943F1639110F000A0848 /* CoreAudio.framework in Frameworks */,
 				87E794401639110F000A0848 /* AudioToolbox.framework in Frameworks */,
@@ -171,6 +179,10 @@
 		87E793FB16390F6D000A0848 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				BB167A611C0BEB55008BB8CA /* UIKit.framework */,
+				BB167A5F1C0BEB4C008BB8CA /* CoreGraphics.framework */,
+				BB167A5D1C0BEB41008BB8CA /* VideoToolbox.framework */,
+				BB167A5B1C0BEB37008BB8CA /* CoreMedia.framework */,
 				8704657A16F6EC9100D4083E /* libiconv.dylib */,
 				87E7944416391B9E000A0848 /* libavcodec.a */,
 				87E7944616391B9E000A0848 /* libavformat.a */,
