@@ -18,17 +18,17 @@
 
 #define USE_YUV_TEXTURE
 
-#define SPHERE_RENDERING
+//#define SPHERE_RENDERING
 
 #ifdef SPHERE_RENDERING
 //#define DRAW_GRID_SPHERE
 #endif
 
-#define CLIP_WIDTH    2
-#define CLIP_Z_NEAR   2
-#define CLIP_Z_FAR    1024
+#define CLIP_WIDTH    6
+#define CLIP_Z_NEAR   1.5
+#define CLIP_Z_FAR    256
 
-#define SPHERE_RADIUS 256
+#define SPHERE_RADIUS 255
 #define LONGITUDE_SEGMENTS  45
 #define LATITUDE_SEGMENTS  45
 

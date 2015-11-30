@@ -18,7 +18,7 @@
 #import "KxMovieGLView.h"
 #import "KxLogger.h"
 
-#define USE_MYGLVIEW
+//#define USE_KXGLVIEW
 
 NSString * const KxMovieParameterMinBufferedDuration = @"KxMovieParameterMinBufferedDuration";
 NSString * const KxMovieParameterMaxBufferedDuration = @"KxMovieParameterMaxBufferedDuration";
@@ -93,7 +93,7 @@ static NSMutableDictionary * gHistory;
     BOOL                _infoMode;
     BOOL                _restoreIdleTimer;
     BOOL                _interrupted;
-#ifndef USE_MYGLVIEW
+#ifdef USE_KXGLVIEW
     KxMovieGLView       *_glView;
 #else
     MyGLView*           _glView;
@@ -720,7 +720,7 @@ _messageLabel.hidden = YES;
     CGRect bounds = self.view.bounds;
     
     if (_decoder.validVideo) {
-#ifndef USE_MYGLVIEW
+#ifdef USE_KXGLVIEW
         _glView = [[KxMovieGLView alloc] initWithFrame:bounds decoder:_decoder];
 #else
         [_decoder setupVideoFrameFormat:KxVideoFrameFormatYUV];
