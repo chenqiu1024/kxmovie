@@ -1383,8 +1383,8 @@ static int interrupt_callback(void *ctx);
             int pktSize = packet.size;
             
             while (pktSize > 0) {
-                ///!!!For Debug
-                NSTimeInterval beforeDecode = [NSDate timeIntervalSinceReferenceDate];
+//                ///!!!For Debug
+//                NSTimeInterval beforeDecode = [NSDate timeIntervalSinceReferenceDate];
 //                static bool drop = false;
 //                if (drop)
 //                {
@@ -1407,9 +1407,9 @@ static int interrupt_callback(void *ctx);
                                                 &gotframe,
                                                 &packet);
                 
-                ///!!!For Debug
-                NSTimeInterval afterDecode = [NSDate timeIntervalSinceReferenceDate];
-                totalDecodeTime += (afterDecode - beforeDecode);
+//                ///!!!For Debug
+//                NSTimeInterval afterDecode = [NSDate timeIntervalSinceReferenceDate];
+//                totalDecodeTime += (afterDecode - beforeDecode);
                 
                 if (len < 0) {
                     LoggerVideo(0, @"decode video error, skip packet");
@@ -1532,15 +1532,15 @@ static int interrupt_callback(void *ctx);
         av_free_packet(&packet);
     }
     
-    ///!!!For Debug
-    totalDecodedDuration += decodedDuration;
-    float ratio = (totalDecodeTime/totalDecodedDuration);
-    //    const float DestRatio = 0.8100;
-    //    if (ratio < DestRatio)
-    //    {
-    //        [NSThread sleepForTimeInterval:(totalDecodedDuration * DestRatio - totalDecodeTime)];
-    //    }
-    NSLog(@"totalDecodeTime / totalDecodedDuration = (%lf / %lf) = %lf", totalDecodeTime, totalDecodedDuration, ratio);///!!!
+//    ///!!!For Debug
+//    totalDecodedDuration += decodedDuration;
+//    float ratio = (totalDecodeTime/totalDecodedDuration);
+//    const float DestRatio = 0.8100;
+//    if (ratio < DestRatio)
+//    {
+//        [NSThread sleepForTimeInterval:(totalDecodedDuration * DestRatio - totalDecodeTime)];
+//    }
+//    NSLog(@"totalDecodeTime / totalDecodedDuration = (%lf / %lf) = %lf", totalDecodeTime, totalDecodedDuration, ratio);///!!!
     
     return result;
 }

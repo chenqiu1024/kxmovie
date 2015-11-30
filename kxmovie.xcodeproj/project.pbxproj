@@ -48,6 +48,19 @@
 		BB167A5E1C0BEB41008BB8CA /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5D1C0BEB41008BB8CA /* VideoToolbox.framework */; };
 		BB167A601C0BEB4C008BB8CA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5F1C0BEB4C008BB8CA /* CoreGraphics.framework */; };
 		BB167A621C0BEB55008BB8CA /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A611C0BEB55008BB8CA /* UIKit.framework */; };
+		BB167A711C0BF479008BB8CA /* CC3Foundation.m in Sources */ = {isa = PBXBuildFile; fileRef = BB167A681C0BF479008BB8CA /* CC3Foundation.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		BB167A721C0BF479008BB8CA /* CC3GLMatrix.m in Sources */ = {isa = PBXBuildFile; fileRef = BB167A6A1C0BF479008BB8CA /* CC3GLMatrix.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		BB167A731C0BF479008BB8CA /* CC3Kazmath.c in Sources */ = {isa = PBXBuildFile; fileRef = BB167A6B1C0BF479008BB8CA /* CC3Kazmath.c */; };
+		BB167A741C0BF479008BB8CA /* CC3Math.m in Sources */ = {isa = PBXBuildFile; fileRef = BB167A6F1C0BF479008BB8CA /* CC3Math.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		BB167A831C0BF4F9008BB8CA /* MyGLView.mm in Sources */ = {isa = PBXBuildFile; fileRef = BB167A771C0BF4F9008BB8CA /* MyGLView.mm */; };
+		BB167A841C0BF4F9008BB8CA /* NSString+Extensions.m in Sources */ = {isa = PBXBuildFile; fileRef = BB167A7A1C0BF4F9008BB8CA /* NSString+Extensions.m */; };
+		BB167A851C0BF4F9008BB8CA /* OpenGLHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = BB167A7C1C0BF4F9008BB8CA /* OpenGLHelper.m */; };
+		BB167A871C0BF4F9008BB8CA /* UIImage+FixOrientation.m in Sources */ = {isa = PBXBuildFile; fileRef = BB167A801C0BF4F9008BB8CA /* UIImage+FixOrientation.m */; };
+		BB167A881C0BF4F9008BB8CA /* UIViewController+Extensions.m in Sources */ = {isa = PBXBuildFile; fileRef = BB167A821C0BF4F9008BB8CA /* UIViewController+Extensions.m */; };
+		BB167A9E1C0BF5B0008BB8CA /* PosColorTex_Fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = BB167A9B1C0BF5B0008BB8CA /* PosColorTex_Fragment.glsl */; };
+		BB167A9F1C0BF5B0008BB8CA /* PosColorTex_Vertex.glsl in Resources */ = {isa = PBXBuildFile; fileRef = BB167A9C1C0BF5B0008BB8CA /* PosColorTex_Vertex.glsl */; };
+		BB167AA01C0BF5B0008BB8CA /* PosColorTexMat_Vertex.glsl in Resources */ = {isa = PBXBuildFile; fileRef = BB167A9D1C0BF5B0008BB8CA /* PosColorTexMat_Vertex.glsl */; };
+		BB167AA21C0C29B0008BB8CA /* YUV_Fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = BB167AA11C0C29B0008BB8CA /* YUV_Fragment.glsl */; };
 		FD20733F5D6A4546A9836E2D /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49D953B9D2DC48FBB580C6AC /* libPods.a */; };
 /* End PBXBuildFile section */
 
@@ -109,6 +122,30 @@
 		BB167A5D1C0BEB41008BB8CA /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/VideoToolbox.framework; sourceTree = DEVELOPER_DIR; };
 		BB167A5F1C0BEB4C008BB8CA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
 		BB167A611C0BEB55008BB8CA /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
+		BB167A671C0BF479008BB8CA /* CC3Foundation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CC3Foundation.h; sourceTree = "<group>"; };
+		BB167A681C0BF479008BB8CA /* CC3Foundation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CC3Foundation.m; sourceTree = "<group>"; };
+		BB167A691C0BF479008BB8CA /* CC3GLMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CC3GLMatrix.h; sourceTree = "<group>"; };
+		BB167A6A1C0BF479008BB8CA /* CC3GLMatrix.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CC3GLMatrix.m; sourceTree = "<group>"; };
+		BB167A6B1C0BF479008BB8CA /* CC3Kazmath.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = CC3Kazmath.c; sourceTree = "<group>"; };
+		BB167A6C1C0BF479008BB8CA /* CC3Kazmath.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CC3Kazmath.h; sourceTree = "<group>"; };
+		BB167A6D1C0BF479008BB8CA /* CC3Logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CC3Logging.h; sourceTree = "<group>"; };
+		BB167A6E1C0BF479008BB8CA /* CC3Math.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CC3Math.h; sourceTree = "<group>"; };
+		BB167A6F1C0BF479008BB8CA /* CC3Math.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CC3Math.m; sourceTree = "<group>"; };
+		BB167A701C0BF479008BB8CA /* ccTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ccTypes.h; sourceTree = "<group>"; };
+		BB167A761C0BF4F9008BB8CA /* MyGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyGLView.h; sourceTree = "<group>"; };
+		BB167A771C0BF4F9008BB8CA /* MyGLView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MyGLView.mm; sourceTree = "<group>"; };
+		BB167A791C0BF4F9008BB8CA /* NSString+Extensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Extensions.h"; sourceTree = "<group>"; };
+		BB167A7A1C0BF4F9008BB8CA /* NSString+Extensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Extensions.m"; sourceTree = "<group>"; };
+		BB167A7B1C0BF4F9008BB8CA /* OpenGLHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OpenGLHelper.h; sourceTree = "<group>"; };
+		BB167A7C1C0BF4F9008BB8CA /* OpenGLHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OpenGLHelper.m; sourceTree = "<group>"; };
+		BB167A7F1C0BF4F9008BB8CA /* UIImage+FixOrientation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+FixOrientation.h"; sourceTree = "<group>"; };
+		BB167A801C0BF4F9008BB8CA /* UIImage+FixOrientation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+FixOrientation.m"; sourceTree = "<group>"; };
+		BB167A811C0BF4F9008BB8CA /* UIViewController+Extensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIViewController+Extensions.h"; sourceTree = "<group>"; };
+		BB167A821C0BF4F9008BB8CA /* UIViewController+Extensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIViewController+Extensions.m"; sourceTree = "<group>"; };
+		BB167A9B1C0BF5B0008BB8CA /* PosColorTex_Fragment.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PosColorTex_Fragment.glsl; sourceTree = "<group>"; };
+		BB167A9C1C0BF5B0008BB8CA /* PosColorTex_Vertex.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PosColorTex_Vertex.glsl; sourceTree = "<group>"; };
+		BB167A9D1C0BF5B0008BB8CA /* PosColorTexMat_Vertex.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PosColorTexMat_Vertex.glsl; sourceTree = "<group>"; };
+		BB167AA11C0C29B0008BB8CA /* YUV_Fragment.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = YUV_Fragment.glsl; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,6 +196,9 @@
 		87E793EB16390F10000A0848 = {
 			isa = PBXGroup;
 			children = (
+				BB167A9A1C0BF56B008BB8CA /* Assets */,
+				BB167A751C0BF49F008BB8CA /* Madv360 */,
+				BB167A661C0BF479008BB8CA /* Cocos3DMathLib */,
 				87E7940216390F6D000A0848 /* KxMovieExample */,
 				87FD6177163A75440090956E /* kxmovie */,
 				87E793FB16390F6D000A0848 /* Frameworks */,
@@ -247,6 +287,59 @@
 			path = kxmovie;
 			sourceTree = "<group>";
 		};
+		BB167A661C0BF479008BB8CA /* Cocos3DMathLib */ = {
+			isa = PBXGroup;
+			children = (
+				BB167A671C0BF479008BB8CA /* CC3Foundation.h */,
+				BB167A681C0BF479008BB8CA /* CC3Foundation.m */,
+				BB167A691C0BF479008BB8CA /* CC3GLMatrix.h */,
+				BB167A6A1C0BF479008BB8CA /* CC3GLMatrix.m */,
+				BB167A6B1C0BF479008BB8CA /* CC3Kazmath.c */,
+				BB167A6C1C0BF479008BB8CA /* CC3Kazmath.h */,
+				BB167A6D1C0BF479008BB8CA /* CC3Logging.h */,
+				BB167A6E1C0BF479008BB8CA /* CC3Math.h */,
+				BB167A6F1C0BF479008BB8CA /* CC3Math.m */,
+				BB167A701C0BF479008BB8CA /* ccTypes.h */,
+			);
+			path = Cocos3DMathLib;
+			sourceTree = "<group>";
+		};
+		BB167A751C0BF49F008BB8CA /* Madv360 */ = {
+			isa = PBXGroup;
+			children = (
+				BB167A761C0BF4F9008BB8CA /* MyGLView.h */,
+				BB167A771C0BF4F9008BB8CA /* MyGLView.mm */,
+				BB167A781C0BF4F9008BB8CA /* Utils */,
+			);
+			path = Madv360;
+			sourceTree = "<group>";
+		};
+		BB167A781C0BF4F9008BB8CA /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				BB167A791C0BF4F9008BB8CA /* NSString+Extensions.h */,
+				BB167A7A1C0BF4F9008BB8CA /* NSString+Extensions.m */,
+				BB167A7B1C0BF4F9008BB8CA /* OpenGLHelper.h */,
+				BB167A7C1C0BF4F9008BB8CA /* OpenGLHelper.m */,
+				BB167A7F1C0BF4F9008BB8CA /* UIImage+FixOrientation.h */,
+				BB167A801C0BF4F9008BB8CA /* UIImage+FixOrientation.m */,
+				BB167A811C0BF4F9008BB8CA /* UIViewController+Extensions.h */,
+				BB167A821C0BF4F9008BB8CA /* UIViewController+Extensions.m */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		BB167A9A1C0BF56B008BB8CA /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				BB167A9B1C0BF5B0008BB8CA /* PosColorTex_Fragment.glsl */,
+				BB167A9C1C0BF5B0008BB8CA /* PosColorTex_Vertex.glsl */,
+				BB167A9D1C0BF5B0008BB8CA /* PosColorTexMat_Vertex.glsl */,
+				BB167AA11C0C29B0008BB8CA /* YUV_Fragment.glsl */,
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -322,7 +415,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB167AA21C0C29B0008BB8CA /* YUV_Fragment.glsl in Resources */,
+				BB167A9E1C0BF5B0008BB8CA /* PosColorTex_Fragment.glsl in Resources */,
 				87E7940F16390F6D000A0848 /* Default.png in Resources */,
+				BB167AA01C0BF5B0008BB8CA /* PosColorTexMat_Vertex.glsl in Resources */,
+				BB167A9F1C0BF5B0008BB8CA /* PosColorTex_Vertex.glsl in Resources */,
 				87E7941116390F6D000A0848 /* Default@2x.png in Resources */,
 				87E7941316390F6D000A0848 /* Default-568h@2x.png in Resources */,
 				87E794271639107F000A0848 /* kxmovie.bundle in Resources */,
@@ -371,9 +468,18 @@
 			files = (
 				87E7940916390F6D000A0848 /* main.m in Sources */,
 				87E794261639107F000A0848 /* KxAudioManager.m in Sources */,
+				BB167A871C0BF4F9008BB8CA /* UIImage+FixOrientation.m in Sources */,
+				BB167A841C0BF4F9008BB8CA /* NSString+Extensions.m in Sources */,
+				BB167A731C0BF479008BB8CA /* CC3Kazmath.c in Sources */,
+				BB167A721C0BF479008BB8CA /* CC3GLMatrix.m in Sources */,
+				BB167A711C0BF479008BB8CA /* CC3Foundation.m in Sources */,
+				BB167A851C0BF4F9008BB8CA /* OpenGLHelper.m in Sources */,
 				87E794281639107F000A0848 /* KxMovieDecoder.m in Sources */,
 				87E794291639107F000A0848 /* KxMovieGLView.m in Sources */,
+				BB167A831C0BF4F9008BB8CA /* MyGLView.mm in Sources */,
 				87E7942A1639107F000A0848 /* KxMovieViewController.m in Sources */,
+				BB167A741C0BF479008BB8CA /* CC3Math.m in Sources */,
+				BB167A881C0BF4F9008BB8CA /* UIViewController+Extensions.m in Sources */,
 				87E7942F1639108E000A0848 /* AppDelegate.m in Sources */,
 				87E794301639108E000A0848 /* MainViewController.m in Sources */,
 			);

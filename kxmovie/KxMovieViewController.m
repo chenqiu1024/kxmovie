@@ -11,11 +11,14 @@
 
 #import "KxMovieViewController.h"
 #import <MediaPlayer/MediaPlayer.h>
+#import "MyGLView.h"
 #import <QuartzCore/QuartzCore.h>
 #import "KxMovieDecoder.h"
 #import "KxAudioManager.h"
 #import "KxMovieGLView.h"
 #import "KxLogger.h"
+
+#define USE_MYGLVIEW
 
 NSString * const KxMovieParameterMinBufferedDuration = @"KxMovieParameterMinBufferedDuration";
 NSString * const KxMovieParameterMaxBufferedDuration = @"KxMovieParameterMaxBufferedDuration";
@@ -90,8 +93,11 @@ static NSMutableDictionary * gHistory;
     BOOL                _infoMode;
     BOOL                _restoreIdleTimer;
     BOOL                _interrupted;
-
+#ifndef USE_MYGLVIEW
     KxMovieGLView       *_glView;
+#else
+    MyGLView*           _glView;
+#endif
     UIImageView         *_imageView;
     UIView              *_topHUD;
     UIToolbar           *_topBar;
@@ -714,8 +720,13 @@ _messageLabel.hidden = YES;
     CGRect bounds = self.view.bounds;
     
     if (_decoder.validVideo) {
+#ifndef USE_MYGLVIEW
         _glView = [[KxMovieGLView alloc] initWithFrame:bounds decoder:_decoder];
-    } 
+#else
+        [_decoder setupVideoFrameFormat:KxVideoFrameFormatYUV];
+        _glView = [[MyGLView alloc] initWithFrame:bounds];
+#endif
+    }
     
     if (!_glView) {
         
