@@ -29,6 +29,8 @@
         self.tabBarItem = [[UITabBarItem alloc] initWithTabBarSystemItem:UITabBarSystemItemFeatured tag: 0];
         
         _remoteMovies = @[
+                          @"rtsp://192.168.42.1/live",
+//                           @"rtsp://172.10.30.1/live",
 @"rtsp://218.204.223.237:554/live/1/66251FC11353191F/e7ooqwcfbqjoo80j.sdp",
 //            @"http://eric.cast.ro/stream2.flv",
 //            @"http://liveipad.wasu.cn/cctv2_ipad/z.m3u8",

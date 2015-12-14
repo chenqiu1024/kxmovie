@@ -12,43 +12,43 @@
 #include <OpenGLES/ES2/gl.h>
 #include <Foundation/Foundation.h>
 
-typedef struct P4C4T2fStruct {
-    GLfloat x;
-    GLfloat y;
-    GLfloat z;
-    GLfloat w;
-    GLfloat r;
-    GLfloat g;
-    GLfloat b;
-    GLfloat a;
-    GLfloat s;
-    GLfloat t;
-} P4C4T2f;
-
-typedef struct DrawablePrimitiveStruct {
-    GLshort* indices;
-    GLsizei indexCount;
-    GLenum type;
-} DrawablePrimitive;
-
-typedef struct Mesh3DStruct {
-    P4C4T2f* vertices;
-    GLsizei vertexCount;
-    
-    DrawablePrimitive* primitives;
-    GLsizei primitiveCount;
-} Mesh3D;
-
-typedef struct QuadfStruct {
-    P4C4T2f leftbottom;
-    P4C4T2f lefttop;
-    P4C4T2f righttop;
-    P4C4T2f rightbottom;
-} Quadf;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+    
+    typedef struct P4C4T2fStruct {
+        GLfloat x;
+        GLfloat y;
+        GLfloat z;
+        GLfloat w;
+        GLfloat r;
+        GLfloat g;
+        GLfloat b;
+        GLfloat a;
+        GLfloat s;
+        GLfloat t;
+    } P4C4T2f;
+    
+    typedef struct DrawablePrimitiveStruct {
+        GLshort* indices;
+        GLsizei indexCount;
+        GLenum type;
+    } DrawablePrimitive;
+    
+    typedef struct Mesh3DStruct {
+        P4C4T2f* vertices;
+        GLsizei vertexCount;
+        
+        DrawablePrimitive* primitives;
+        GLsizei primitiveCount;
+    } Mesh3D;
+    
+    typedef struct QuadfStruct {
+        P4C4T2f leftbottom;
+        P4C4T2f lefttop;
+        P4C4T2f righttop;
+        P4C4T2f rightbottom;
+    } Quadf;
     
     unsigned long nextPOT(unsigned long x);
     

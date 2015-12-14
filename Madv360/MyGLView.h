@@ -7,8 +7,11 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "OpenGLHelper.h"
 
 @class KxVideoFrame;
+
+void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount);\
 
 @interface MyGLView : UIView
 
