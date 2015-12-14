@@ -107,6 +107,7 @@ GLfloat vertexDatas[] = {
     glDeleteVertexArraysOES(1, &_vao);
     glDeleteBuffers(1, &_vertexBuffer);
     glDeleteBuffers(_mesh.primitiveCount, _indexBuffers);
+    if (_indexBuffers) delete[] _indexBuffers;
 #endif
     Mesh3DRelease(_mesh);
     glDeleteFramebuffers(1, &_framebuffer);
@@ -115,8 +116,6 @@ GLfloat vertexDatas[] = {
     glDeleteTextures(1, &_texture);
     glDeleteProgram(_shaderProgram);
     [EAGLContext setCurrentContext:nil];
-    
-    if (_indexBuffers) delete[] _indexBuffers;
 }
 
 - (instancetype) initWithFrame:(CGRect)frame {
@@ -190,7 +189,7 @@ GLfloat vertexDatas[] = {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glPolygonOffset(0.1f, 0.2f);///???
-    glCullFace(GL_CCW);
+//    glCullFace(GL_CCW);
     glBlendFunc(GL_ONE, GL_ONE);
     
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
