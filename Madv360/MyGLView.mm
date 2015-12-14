@@ -9,7 +9,7 @@
 #import "MyGLView.h"
 #import "KxMovieDecoder.h"
 #import "CC3GLMatrix.h"
-#import "OpenGLHelper.h"
+//#import "OpenGLHelper.h"
 #import "NSString+Extensions.h"
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/EAGL.h>
@@ -26,12 +26,12 @@
 #endif
 
 #define CLIP_WIDTH    6
-#define CLIP_Z_NEAR   1.5
+#define CLIP_Z_NEAR   2
 #define CLIP_Z_FAR    256
 
 #define SPHERE_RADIUS 255
-#define LONGITUDE_SEGMENTS  45
-#define LATITUDE_SEGMENTS  45
+#define LONGITUDE_SEGMENTS  180
+#define LATITUDE_SEGMENTS 180
 
 #define Z_SHIFT   0
 
@@ -41,6 +41,92 @@ GLfloat vertexDatas[] = {
     1,1,1,1,    0,0,1,1,   1,1,// 2: RT
     1,-1,1,1,    1,1,1,1,   1,0,// 3: RB
 };
+
+void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
+    const int SrcWidth = 3200, SrcHeight = 1600;
+    int width, height, size;
+    const uint16_t* lutValues[8];
+    NSArray* pngNames = @[@"L_x_int.png",@"L_x_min.png", @"L_y_int.png",@"L_y_min.png", @"R_x_int.png",@"R_x_min.png", @"R_y_int.png",@"R_y_min.png"];
+    for (int i=0; i<8; i++)
+    {
+        NSString* pngName = [pngNames objectAtIndex:i];
+        UIImage* img = [UIImage imageNamed:pngName];
+        width = img.size.width;
+        height = img.size.height;
+        
+        CFDataRef imgData = CGDataProviderCopyData(CGImageGetDataProvider(img.CGImage));
+        NSInteger byteSize = CFDataGetLength(imgData);
+        lutValues[i] = (const uint16_t*)malloc(byteSize);
+        const uint8_t* pixels = CFDataGetBytePtr(imgData);
+        size = (int) byteSize / sizeof(uint16_t);
+        memcpy((void*)lutValues[i], pixels, byteSize);
+        CFRelease(imgData);
+    }
+    
+    float* LX = (float*) malloc(sizeof(float) * size);
+    float* LY = (float*) malloc(sizeof(float) * size);
+    float* RX = (float*) malloc(sizeof(float) * size);
+    float* RY = (float*) malloc(sizeof(float) * size);
+    for (int i=0; i<size; i++)
+    {
+        LX[i] = (float)lutValues[0][i] + (float)lutValues[1][i] / 1000.f;
+        LY[i] = (float)lutValues[2][i] + (float)lutValues[3][i] / 1000.f;
+        RX[i] = (float)lutValues[4][i] + (float)lutValues[5][i] / 1000.f;
+        RY[i] = (float)lutValues[6][i] + (float)lutValues[7][i] / 1000.f;
+    }
+    for (int i=0; i<8; i++) free((void*)lutValues[i]);
+    
+    //For Debug:
+    float minXL = SrcWidth, maxXL = 0, minYL = SrcHeight, maxYL = 0;
+    float minXR = SrcWidth, maxXR = 0, minYR = SrcHeight, maxYR = 0;
+    //:For Debug
+    
+    float x0 = width / 4;
+    float x1 = width * 3 / 4;
+    for (int i=0; i<vertexCount; i++)
+    {
+        P4C4T2f& vert = vertices[i];
+        float dstX = vert.s * width;
+        float dstY = vert.t * height;
+        int index = (int) (dstY * width + dstX);
+        float srcX, srcY;
+        if (dstX >= x0 && dstX < x1)
+        {
+            //Use right LUT:
+            srcX = RX[index] + SrcWidth / 2;
+            srcY = RY[index];
+            
+            //For Debug:
+            if (srcX > maxXR) maxXR = srcX;
+            if (srcX < minXR) minXR = srcX;
+            if (srcY > maxYR) maxYR = srcY;
+            if (srcY < minYR) minYR = srcY;
+        }
+        else
+        {
+            //Use left LUT:
+            srcX = LX[index];
+            srcY = LY[index];
+            
+            //For Debug:
+            if (srcX > maxXL) maxXL = srcX;
+            if (srcX < minXL) minXL = srcX;
+            if (srcY > maxYL) maxYL = srcY;
+            if (srcY < minYL) minYL = srcY;
+        }
+        
+        vert.s = srcX / SrcWidth;
+        vert.t = srcY / SrcHeight;
+    }
+    
+    //For Debug:
+    NSLog(@"minXL=%f, maxXL=%f, minYL=%f, maxYL=%f; minXR=%f, maxXR=%f, minYR=%f, maxYR=%f", minXL, maxXL, minYL, maxYL, minXR, maxXR, minYR, maxYR);
+    
+    free(LX);
+    free(LY);
+    free(RX);
+    free(RY);
+}
 
 @interface MyGLView ()
 {
@@ -142,6 +228,7 @@ GLfloat vertexDatas[] = {
         [self prepareGLProgram];
 #ifdef SPHERE_RENDERING
         _mesh = createSphere(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
+        convertTexCoordWithLUT(_mesh.vertices, _mesh.vertexCount);
 #ifdef DRAW_GRID_SPHERE
         _gridColors = (GLfloat*) malloc(3 * sizeof(GLfloat) * LONGITUDE_SEGMENTS * LATITUDE_SEGMENTS);
         for (int i=0; i<LONGITUDE_SEGMENTS*LATITUDE_SEGMENTS; i++)

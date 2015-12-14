@@ -12,6 +12,8 @@
 #import "AppDelegate.h"
 #import "MainViewController.h"
 
+#import "MyGLView.h"
+
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
@@ -25,6 +27,10 @@
 
     LoggerApp(1, @"Application didFinishLaunchingWithOptions");
 
+//    Mesh3D mesh = createSphere(13, 3000, 3000);
+//    convertTexCoordWithLUT(mesh.vertices, mesh.vertexCount);
+//    Mesh3DRelease(mesh);
+    
     return YES;
 }
 
