@@ -15,6 +15,7 @@
 #import <OpenGLES/EAGL.h>
 
 //#define USE_DISPLAYLINK
+#define USE_VAO
 
 #define USE_YUV_TEXTURE
 
@@ -144,6 +145,12 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
     GLuint _yuvTextures[3];
 #endif
     
+#ifdef USE_VAO
+    GLuint _vao;
+    GLuint _vertexBuffer;
+    GLuint* _indexBuffers;
+#endif
+    
     GLint _shaderProgram;
     
     GLint _atrPosition;
@@ -182,6 +189,11 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
 
 - (void) dealloc {
     free(_gridColors);
+#ifdef USE_VAO
+    glDeleteVertexArraysOES(1, &_vao);
+    glDeleteBuffers(1, &_vertexBuffer);
+    glDeleteBuffers(_mesh.primitiveCount, _indexBuffers);
+#endif
     Mesh3DRelease(_mesh);
     glDeleteFramebuffers(1, &_framebuffer);
     glDeleteRenderbuffers(1, &_renderbuffer);
@@ -189,6 +201,8 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
     glDeleteTextures(1, &_texture);
     glDeleteProgram(_shaderProgram);
     [EAGLContext setCurrentContext:nil];
+    
+    if (_indexBuffers) delete[] _indexBuffers;
 }
 
 - (instancetype) initWithFrame:(CGRect)frame {
@@ -230,6 +244,10 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
                            P4C4T2fMake(-1,1,0,1, 0,0,0,0, 0,0),
                            P4C4T2fMake(1,1,0,1, 0,0,0,0, 1,0),
                            P4C4T2fMake(1,-1,0,1, 0,0,0,0, 1,1));
+#endif
+        
+#ifdef USE_VAO
+        [self prepareVAO];
 #endif
         
 #ifdef USE_DISPLAYLINK
@@ -447,15 +465,50 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
 #endif
 }
 
+#ifdef USE_VAO
+- (void) prepareVAO {
+    glGenVertexArraysOES(1, &_vao);
+    glBindVertexArrayOES(_vao);
+    
+    glGenBuffers(1, &_vertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(P4C4T2f) * _mesh.vertexCount, _mesh.vertices, GL_STATIC_DRAW);
+    
+    glVertexAttribPointer(_atrPosition, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 10, 0);
+    glVertexAttribPointer(_atrColor, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 10, (const GLvoid*) (sizeof(GLfloat) * 4));
+    glVertexAttribPointer(_atrTexCoord, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 10, (const GLvoid*) (sizeof(GLfloat) * 8));
+    
+    _indexBuffers = new GLuint[_mesh.primitiveCount];
+    glGenBuffers(_mesh.primitiveCount, _indexBuffers);
+    for (int i=0; i<_mesh.primitiveCount; ++i)
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indexBuffers[i]);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * _mesh.primitives[i].indexCount, _mesh.primitives[i].indices, GL_STATIC_DRAW);
+    }
+    
+    glBindVertexArrayOES(0);
+}
+#endif
+
 - (void) drawPrimitives {
-    glVertexAttribPointer(_atrPosition, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 10, (GLfloat*)_mesh.vertices);//TODO: VAO
+#ifdef USE_VAO
+    glBindVertexArrayOES(_vao);
+    
+    for (int i=0; i<_mesh.primitiveCount; ++i)
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indexBuffers[i]);
+        glDrawElements(_mesh.primitives[i].type, _mesh.primitives[i].indexCount, GL_UNSIGNED_SHORT, 0);
+    }
+#else
+    glVertexAttribPointer(_atrPosition, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 10, (GLfloat*)_mesh.vertices);
     glVertexAttribPointer(_atrColor, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 10, (GLfloat*)_mesh.vertices + 4);
     glVertexAttribPointer(_atrTexCoord, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 10, (GLfloat*)_mesh.vertices + 8);
-    
+
     for (int i=0; i<_mesh.primitiveCount; ++i)
     {
         glDrawElements(_mesh.primitives[i].type, _mesh.primitives[i].indexCount, GL_UNSIGNED_SHORT, _mesh.primitives[i].indices);
     }
+#endif
 }
 
 - (void) draw {
