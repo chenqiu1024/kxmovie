@@ -11,12 +11,16 @@
 
 #import "KxMovieDecoder.h"
 #import <Accelerate/Accelerate.h>
+#import <CoreMedia/CoreMedia.h>
+#import <VideoToolbox/VideoToolbox.h>
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
 #include "libavutil/pixdesc.h"
 #import "KxAudioManager.h"
 #import "KxLogger.h"
+
+//#define USE_iOS8HW_DECODING
 
 ////////////////////////////////////////////////////////////////////////////////
 NSString * kxmovieErrorDomain = @"ru.kolyvan.kxmovie";
@@ -422,6 +426,14 @@ static int interrupt_callback(void *ctx);
     KxVideoFrameFormat  _videoFrameFormat;
     NSUInteger          _artworkStream;
     NSInteger           _subtitleASSEvents;
+    
+#ifdef USE_iOS8HW_DECODING
+    CMVideoFormatDescriptionRef videoFormatDescr;
+    VTDecompressionSessionRef session;
+    OSStatus status;
+    NSData *spsData;
+    NSData *ppsData;
+#endif
 }
 @end
 
@@ -762,6 +774,12 @@ static int interrupt_callback(void *ctx);
         return NO;
     }
     
+#ifdef USE_iOS8HW_DECODING
+    spsData = nil;
+    ppsData = nil;
+    videoFormatDescr = NULL;
+    session = NULL;
+#endif
     return YES;
 }
 
@@ -861,7 +879,7 @@ static int interrupt_callback(void *ctx);
     AVStream *st = _formatCtx->streams[_videoStream];
     avStreamFPSTimeBase(st, 0.04, &_fps, &_videoTimeBase);
     
-    LoggerVideo(1, @"video codec size: %d:%d fps: %.3f tb: %f",
+    LoggerVideo(1, @"video codec size: %ld:%ld fps: %.3f tb: %f",
                 self.frameWidth,
                 self.frameHeight,
                 _fps,
@@ -1214,7 +1232,7 @@ static int interrupt_callback(void *ctx);
         
         const int bufSize = av_samples_get_buffer_size(NULL,
                                                        audioManager.numOutputChannels,
-                                                       _audioFrame->nb_samples * ratio,
+                                                       (int) (_audioFrame->nb_samples * ratio),
                                                        AV_SAMPLE_FMT_S16,
                                                        1);
         
@@ -1227,7 +1245,7 @@ static int interrupt_callback(void *ctx);
         
         numFrames = swr_convert(_swrContext,
                                 outbuf,
-                                _audioFrame->nb_samples * ratio,
+                                (int) (_audioFrame->nb_samples * ratio),
                                 (const uint8_t **)_audioFrame->data,
                                 _audioFrame->nb_samples);
         
@@ -1337,6 +1355,266 @@ static int interrupt_callback(void *ctx);
     return NO;
 }
 
+#ifdef USE_iOS8HW_DECODING
+#pragma mark - iOS8 HW decode 相關method
+
+#define USE_DECOMPRESS_BLOCK
+
+#define PIXEL_FORMAT_YUV420
+
+- (void) iOS8HWDecode : (AVPacket*)packet
+      decompressBlock : (VTDecompressionOutputHandler)decompressBlock
+{
+    // 1. get SPS,PPS form stream data, and create CMFormatDescription 和 VTDecompressionSession
+    if (spsData == nil && ppsData == nil) {
+        uint8_t *data = _videoCodecCtx->extradata;
+        int size = _videoCodecCtx->extradata_size;
+        NSString *tmp3 = [NSString new];
+        for(int i = 0; i < size; i++) {
+            NSString *str = [NSString stringWithFormat:@" %.2X",data[i]];
+            tmp3 = [tmp3 stringByAppendingString:str];
+        }
+        
+        //        NSLog(@"size ---->>%i",size);
+        //        NSLog(@"%@",tmp3);
+        
+        int startCodeSPSIndex = 0;
+        int startCodePPSIndex = 0;
+        int spsLength = 0;
+        int ppsLength = 0;
+        
+        for (int i = 0; i < size; i++) {
+            if (i >= 3) {
+                if (data[i] == 0x01 && data[i-1] == 0x00 && data[i-2] == 0x00 && data[i-3] == 0x00) {
+                    if (startCodeSPSIndex == 0) {
+                        startCodeSPSIndex = i;
+                    }
+                    if (i > startCodeSPSIndex) {
+                        startCodePPSIndex = i;
+                    }
+                }
+            }
+        }
+        
+        spsLength = startCodePPSIndex - startCodeSPSIndex - 4;
+        ppsLength = size - (startCodePPSIndex + 1);
+        
+        //        NSLog(@"startCodeSPSIndex --> %i",startCodeSPSIndex);
+        //        NSLog(@"startCodePPSIndex --> %i",startCodePPSIndex);
+        //        NSLog(@"spsLength --> %i",spsLength);
+        //        NSLog(@"ppsLength --> %i",ppsLength);
+        
+        int nalu_type;
+        nalu_type = ((uint8_t) data[startCodeSPSIndex + 1] & 0x1F);
+        //        NSLog(@"NALU with Type \"%@\" received.", naluTypesStrings[nalu_type]);
+        if (nalu_type == 7) {
+            spsData = [NSData dataWithBytes:&(data[startCodeSPSIndex + 1]) length: spsLength];
+        }
+        
+        nalu_type = ((uint8_t) data[startCodePPSIndex + 1] & 0x1F);
+        //        NSLog(@"NALU with Type \"%@\" received.", naluTypesStrings[nalu_type]);
+        if (nalu_type == 8) {
+            ppsData = [NSData dataWithBytes:&(data[startCodePPSIndex + 1]) length: ppsLength];
+        }
+        
+        // 2. create  CMFormatDescription
+        if (spsData != nil && ppsData != nil) {
+            const uint8_t* const parameterSetPointers[2] = { (const uint8_t*)[spsData bytes], (const uint8_t*)[ppsData bytes] };
+            const size_t parameterSetSizes[2] = { [spsData length], [ppsData length] };
+            status = CMVideoFormatDescriptionCreateFromH264ParameterSets(kCFAllocatorDefault, 2, parameterSetPointers, parameterSetSizes, 4, &videoFormatDescr);
+            //            NSLog(@"Found all data for CMVideoFormatDescription. Creation: %@.", (status == noErr) ? @"successfully." : @"failed.");
+        }
+        
+        // 3. create VTDecompressionSession
+#ifndef USE_DECOMPRESS_BLOCK
+        VTDecompressionOutputCallbackRecord callback;
+        callback.decompressionOutputCallback = didDecompress;
+        callback.decompressionOutputRefCon = (__bridge void *)self;
+#endif
+        
+#ifdef PIXEL_FORMAT_YUV420
+        NSDictionary *destinationImageBufferAttributes =[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:NO],(id)kCVPixelBufferOpenGLESCompatibilityKey,[NSNumber numberWithInt:kCVPixelFormatType_420YpCbCr8Planar],(id)kCVPixelBufferPixelFormatTypeKey,nil];
+#else
+        NSDictionary *destinationImageBufferAttributes =[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:NO],(id)kCVPixelBufferOpenGLESCompatibilityKey,[NSNumber numberWithInt:kCVPixelFormatType_32BGRA],(id)kCVPixelBufferPixelFormatTypeKey,nil];
+#endif
+        //        NSDictionary *destinationImageBufferAttributes =[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:NO],(id)kCVPixelBufferOpenGLESCompatibilityKey,nil];
+        //        NSDictionary *destinationImageBufferAttributes = [NSDictionary dictionaryWithObject: [NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey: (id)kCVPixelBufferPixelFormatTypeKey];
+#ifdef USE_DECOMPRESS_BLOCK
+        status = VTDecompressionSessionCreate(kCFAllocatorDefault, videoFormatDescr, NULL, (__bridge_retained CFDictionaryRef)destinationImageBufferAttributes, NULL, &session);///!!!
+#else
+        status = VTDecompressionSessionCreate(kCFAllocatorDefault, videoFormatDescr, NULL, (__bridge_retained CFDictionaryRef)destinationImageBufferAttributes, &callback, &session);///!!!
+#endif
+        //        status = VTDecompressionSessionCreate(kCFAllocatorDefault, videoFormatDescr, NULL, NULL, &callback, &session);
+        //        NSLog(@"Creating Video Decompression Session: %@.", (status == noErr) ? @"successfully." : @"failed.");
+        
+        
+        int32_t timeSpan = 90000;
+        CMSampleTimingInfo timingInfo;
+        timingInfo.presentationTimeStamp = CMTimeMake(0, timeSpan);
+        timingInfo.duration =  CMTimeMake(3000, timeSpan);
+        timingInfo.decodeTimeStamp = kCMTimeInvalid;
+    }
+    
+    int startCodeIndex = 0;
+    for (int i = 0; i < 5; i++) {
+        if (packet->data[i] == 0x01) {
+            startCodeIndex = i;
+            break;
+        }
+    }
+    int nalu_type = ((uint8_t)packet->data[startCodeIndex + 1] & 0x1F);
+    //    NSLog(@"NALU with Type \"%@\" received.", naluTypesStrings[nalu_type]);
+    
+    if (nalu_type == 1 || nalu_type == 5) {
+        // 4. get NALUnit payload into a CMBlockBuffer,
+        CMBlockBufferRef videoBlock = NULL;
+        status = CMBlockBufferCreateWithMemoryBlock(NULL, packet->data, packet->size, kCFAllocatorNull, NULL, 0, packet->size, 0, &videoBlock);
+        //        NSLog(@"BlockBufferCreation: %@", (status == kCMBlockBufferNoErr) ? @"successfully." : @"failed.");
+        
+        // 5.  making sure to replace the separator code with a 4 byte length code (the length of the NalUnit including the unit code)
+        int reomveHeaderSize = packet->size - 4;
+        const uint8_t sourceBytes[] = {(uint8_t)(reomveHeaderSize >> 24), (uint8_t)(reomveHeaderSize >> 16), (uint8_t)(reomveHeaderSize >> 8), (uint8_t)reomveHeaderSize};
+        status = CMBlockBufferReplaceDataBytes(sourceBytes, videoBlock, 0, 4);
+        //        NSLog(@"BlockBufferReplace: %@", (status == kCMBlockBufferNoErr) ? @"successfully." : @"failed.");
+        
+        NSString *tmp3 = [NSString new];
+        for(int i = 0; i < sizeof(sourceBytes); i++) {
+            NSString *str = [NSString stringWithFormat:@" %.2X",sourceBytes[i]];
+            tmp3 = [tmp3 stringByAppendingString:str];
+        }
+        //        NSLog(@"size = %i , 16Byte = %@",reomveHeaderSize,tmp3);
+        
+        // 6. create a CMSampleBuffer.
+        CMSampleBufferRef sbRef = NULL;
+        //        int32_t timeSpan = 90000;
+        //        CMSampleTimingInfo timingInfo;
+        //        timingInfo.presentationTimeStamp = CMTimeMake(0, timeSpan);
+        //        timingInfo.duration =  CMTimeMake(3000, timeSpan);
+        //        timingInfo.decodeTimeStamp = kCMTimeInvalid;
+        const size_t sampleSizeArray[] = {packet->size};
+        
+        // 实际测试时，加入time信息后，有不稳定的图像，不加入time信息反而没有，需要进一步研究，这里建议不加入time信息 : http://www.tallmantech.com/archives/206#more-206
+        //        status = CMSampleBufferCreate(kCFAllocatorDefault, videoBlock, true, NULL, NULL, videoFormatDescr, 1, 1, &timingInfo, 1, sampleSizeArray, &sbRef);
+        status = CMSampleBufferCreate(kCFAllocatorDefault, videoBlock, true, NULL, NULL, videoFormatDescr, 1, 0, NULL, 1, sampleSizeArray, &sbRef);
+        
+        //        NSLog(@"SampleBufferCreate: %@", (status == noErr) ? @"successfully." : @"failed.");
+        
+        // 7. use VTDecompressionSessionDecodeFrame
+        VTDecodeInfoFlags flagOut;
+        
+#ifdef USE_DECOMPRESS_BLOCK
+        VTDecodeFrameFlags flags = 0;
+        status = VTDecompressionSessionDecodeFrameWithOutputHandler(session, sbRef, flags, &flagOut, decompressBlock);
+#else
+        VTDecodeFrameFlags flags = kVTDecodeFrame_EnableAsynchronousDecompression;
+        status = VTDecompressionSessionDecodeFrame(session, sbRef, flags, &sbRef, &flagOut);
+#endif
+        //        NSLog(@"VTDecompressionSessionDecodeFrame: %@", (status == noErr) ? @"successfully." : @"failed.");
+        CFRelease(sbRef);
+        
+//        [self.delegate startDecodeData];
+        
+        //        /* Flush in-process frames. */
+        //        VTDecompressionSessionFinishDelayedFrames(session);
+        //        /* Block until our callback has been called with the last frame. */
+        //        VTDecompressionSessionWaitForAsynchronousFrames(session);
+        //
+        //        /* Clean up. */
+        //        VTDecompressionSessionInvalidate(session);
+        //        CFRelease(session);
+        //        CFRelease(videoFormatDescr);
+        
+        
+        //        NSLog(@"========================================================================");
+        //        NSLog(@"========================================================================");
+    }
+}
+
+
+#pragma mark - VideoToolBox Decompress Frame CallBack
+/*
+ This callback gets called everytime the decompresssion session decodes a frame
+ */
+void didDecompress( void *decompressionOutputRefCon, void *sourceFrameRefCon, OSStatus status, VTDecodeInfoFlags infoFlags, CVImageBufferRef imageBuffer, CMTime presentationTimeStamp, CMTime presentationDuration )
+{
+    if (status != noErr || !imageBuffer) {
+        // error -8969 codecBadDataErr
+        // -12909 The operation couldn’t be completed. (OSStatus error -12909.)
+        NSLog(@"Error decompresssing frame at time: %.3f error: %d infoFlags: %u", (float)presentationTimeStamp.value/presentationTimeStamp.timescale, (int)status, (unsigned int)infoFlags);
+        return;
+    }
+    
+        NSLog(@"Got frame data.\n");
+        NSLog(@"Success decompresssing frame at time: %.3f error: %d infoFlags: %u", (float)presentationTimeStamp.value/presentationTimeStamp.timescale, (int)status, (unsigned int)infoFlags);
+//    __weak __block SuperVideoFrameExtractor *weakSelf = (__bridge SuperVideoFrameExtractor *)decompressionOutputRefCon;
+//    [weakSelf.delegate getDecodeImageData:imageBuffer];
+    
+}
+
+
+//- (void) dumpPacketData
+//{
+//    // Log dump
+//    int index = 0;
+//    NSString *tmp = [NSString new];
+//    for(int i = 0; i < packet.size; i++) {
+//        NSString *str = [NSString stringWithFormat:@" %.2X",packet.data[i]];
+//        if (i == 4) {
+//            NSString *header = [NSString stringWithFormat:@"%.2X",packet.data[i]];
+//            NSLog(@" header ====>> %@",header);
+//            if ([header isEqualToString:@"41"]) {
+//                NSLog(@"P Frame");
+//            }
+//            if ([header isEqualToString:@"65"]) {
+//                NSLog(@"I Frame");
+//            }
+//        }
+//        tmp = [tmp stringByAppendingString:str];
+//        index++;
+//        if (index == 16) {
+//            NSLog(@"%@",tmp);
+//            tmp = @"";
+//            index = 0;
+//        }
+//    }
+//}
+
+NSString * const naluTypesStrings[] = {
+    @"Unspecified (non-VCL)",
+    @"Coded slice of a non-IDR picture (VCL)",
+    @"Coded slice data partition A (VCL)",
+    @"Coded slice data partition B (VCL)",
+    @"Coded slice data partition C (VCL)",
+    @"Coded slice of an IDR picture (VCL)",
+    @"Supplemental enhancement information (SEI) (non-VCL)",
+    @"Sequence parameter set (non-VCL)",
+    @"Picture parameter set (non-VCL)",
+    @"Access unit delimiter (non-VCL)",
+    @"End of sequence (non-VCL)",
+    @"End of stream (non-VCL)",
+    @"Filler data (non-VCL)",
+    @"Sequence parameter set extension (non-VCL)",
+    @"Prefix NAL unit (non-VCL)",
+    @"Subset sequence parameter set (non-VCL)",
+    @"Reserved (non-VCL)",
+    @"Reserved (non-VCL)",
+    @"Reserved (non-VCL)",
+    @"Coded slice of an auxiliary coded picture without partitioning (non-VCL)",
+    @"Coded slice extension (non-VCL)",
+    @"Coded slice extension for depth view components (non-VCL)",
+    @"Reserved (non-VCL)",
+    @"Reserved (non-VCL)",
+    @"Unspecified (non-VCL)",
+    @"Unspecified (non-VCL)",
+    @"Unspecified (non-VCL)",
+    @"Unspecified (non-VCL)",
+    @"Unspecified (non-VCL)",
+    @"Unspecified (non-VCL)",
+    @"Unspecified (non-VCL)",
+    @"Unspecified (non-VCL)",
+};
+#endif //USE_iOS8HW_DECODING
+
 #pragma mark - public
 
 - (BOOL) setupVideoFrameFormat: (KxVideoFrameFormat) format
@@ -1363,13 +1641,13 @@ static int interrupt_callback(void *ctx);
     
     AVPacket packet;
     
-    CGFloat decodedDuration = 0;
+    __block CGFloat decodedDuration = 0;
     
-    BOOL finished = NO;
+    __block BOOL finished = NO;
     
-    ///!!!For Debug
-    static double totalDecodeTime = 0;
-    static double totalDecodedDuration = 0;
+//    ///!!!For Debug
+//    static double totalDecodeTime = 0;
+//    static double totalDecodedDuration = 0;
     
     while (!finished) {
         
@@ -1400,7 +1678,50 @@ static int interrupt_callback(void *ctx);
 //                {
 //                    drop = true;
 //                }
-                
+#ifdef USE_iOS8HW_DECODING
+                [self iOS8HWDecode:&packet decompressBlock:^(OSStatus status, VTDecodeInfoFlags infoFlags, CVImageBufferRef  _Nullable buffer, CMTime presentationTimeStamp, CMTime presentationDuration) {
+                    CVPixelBufferLockBaseAddress(buffer, kCVPixelBufferLock_ReadOnly);
+                    uint8_t* data = CVPixelBufferGetBaseAddress(buffer);
+                    size_t bytesPerRow = CVPixelBufferGetBytesPerRow(buffer);
+                    size_t width = CVPixelBufferGetWidth(buffer);
+                    size_t height = CVPixelBufferGetHeight(buffer);
+                    OSType pixelFormat = CVPixelBufferGetPixelFormatType(buffer);
+
+                    KxVideoFrameYUV * yuvFrame = [[KxVideoFrameYUV alloc] init];
+                    
+                    yuvFrame.luma = copyFrameData(CVPixelBufferGetBaseAddressOfPlane(buffer, 0),//_videoFrame->data[0],
+                                                  (int)CVPixelBufferGetBytesPerRowOfPlane(buffer, 0),//_videoFrame->linesize[0],
+                                                  (int)CVPixelBufferGetWidthOfPlane(buffer, 0),//_videoCodecCtx->width,
+                                                  (int)CVPixelBufferGetHeightOfPlane(buffer, 0));//_videoCodecCtx->height);
+                    
+                    yuvFrame.chromaB = copyFrameData(CVPixelBufferGetBaseAddressOfPlane(buffer, 1),//_videoFrame->data[1],
+                                                     (int)CVPixelBufferGetBytesPerRowOfPlane(buffer, 1),//_videoFrame->linesize[1],
+                                                     (int)CVPixelBufferGetWidthOfPlane(buffer, 1),//_videoCodecCtx->width / 2,
+                                                     (int)CVPixelBufferGetHeightOfPlane(buffer, 1));//_videoCodecCtx->height / 2);
+                    
+                    yuvFrame.chromaR = copyFrameData(CVPixelBufferGetBaseAddressOfPlane(buffer, 2),//_videoFrame->data[2],
+                                                     (int)CVPixelBufferGetBytesPerRowOfPlane(buffer, 2),//_videoFrame->linesize[2],
+                                                     (int)CVPixelBufferGetWidthOfPlane(buffer, 2),//_videoCodecCtx->width / 2,
+                                                     (int)CVPixelBufferGetHeightOfPlane(buffer, 2));//_videoCodecCtx->height / 2);
+                    
+                    CVPixelBufferUnlockBaseAddress(buffer, kCVPixelBufferLock_ReadOnly);
+                    
+                    yuvFrame.position = (CGFloat)presentationTimeStamp.value / (CGFloat)presentationTimeStamp.timescale;
+                    yuvFrame.duration = (CGFloat)presentationDuration.value / (CGFloat)presentationDuration.timescale;
+                    
+//                    if (frame) {
+                        [result addObject:yuvFrame];
+                        _position = yuvFrame.position;
+                        decodedDuration += yuvFrame.duration;
+                        if (decodedDuration > minDuration)
+                            finished = YES;
+//                    }
+                }];
+                //                ///!!!For Debug
+                //                NSTimeInterval afterDecode = [NSDate timeIntervalSinceReferenceDate];
+                //                totalDecodeTime += (afterDecode - beforeDecode);
+                int len = packet.size;///!!!
+#else
                 int gotframe = 0;
                 int len = avcodec_decode_video2(_videoCodecCtx,
                                                 _videoFrame,
@@ -1439,7 +1760,7 @@ static int interrupt_callback(void *ctx);
                             finished = YES;
                     }
                 }
-                
+#endif
                 if (0 == len)
                     break;
                 
