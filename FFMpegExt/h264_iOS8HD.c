@@ -1471,10 +1471,20 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
         ff_h264_reset_sei(h);
     }
     
+    //AVC1和H264的区别：http://blog.csdn.net/leixiaohua1020/article/details/45042755
+    //AVC1 描述:H.264 bitstream without start codes.是不带起始码0x00000001的。FLV/MKV/MOV种的H.264属于这种
+    //H264 描述:H.264 bitstream with start codes.是带有起始码0x00000001的。H.264裸流，MPEGTS种的H.264属于这种
+    //
+    //通过VLC播放器，可以查看到具体的格式。打开视频后，通过菜单【工具】/【编解码信息】可以查看到【编解码器】具体格式，举例如下，编解码器信息：
+    //编码: H264 – MPEG-4 AVC (part 10) (avc1)
+    //编码: H264 – MPEG-4 AVC (part 10) (h264)
+    
     if (h->nal_length_size == 4) {
         if (buf_size > 8 && AV_RB32(buf) == 1 && AV_RB32(buf+5) > (unsigned)buf_size) {
+            //前面4位是起始码0x00000001
             h->is_avc = 0;
         }else if(buf_size > 3 && AV_RB32(buf) > 1 && AV_RB32(buf) <= (unsigned)buf_size)
+            //前面4位是长度数据
             h->is_avc = 1;
     }
     
@@ -1508,7 +1518,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
             }
             
             hx = h->thread_context[context_count];
-            
+            //解析得到NAL（获得nal_unit_type等信息
             ptr = ff_h264HD_decode_nal(hx, buf + buf_index, &dst_length,
                                      &consumed, next_avc - buf_index);
             if (ptr == NULL || dst_length < 0) {
@@ -1561,9 +1571,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
             }
             
             err = 0;
-            
+            //根据不同的 NALU Type，调用不同的函数
             switch (hx->nal_unit_type) {
-                case NAL_IDR_SLICE:
+                case NAL_IDR_SLICE://IDR帧
                     if (h->nal_unit_type != NAL_IDR_SLICE) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "Invalid mix of idr and non-idr slices\n");
@@ -1573,12 +1583,13 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                     if(!idr_cleared)
                         idr(h); // FIXME ensure we don't lose some frames if there is reordering
                     idr_cleared = 1;
+                    //注意没有break
                 case NAL_SLICE:
                     init_get_bits(&hx->gb, ptr, bit_length);
                     hx->intra_gb_ptr      =
                     hx->inter_gb_ptr      = &hx->gb;
                     hx->data_partitioning = 0;
-                    
+                    //解码Slice Header
                     if ((err = ff_h264_decode_slice_header(hx, h)))
                         break;
                     
@@ -1665,7 +1676,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                     init_get_bits(&hx->gb, ptr, bit_length);
                     hx->intra_gb_ptr =
                     hx->inter_gb_ptr = NULL;
-                    
+                    //解码Slice Header
                     if ((err = ff_h264_decode_slice_header(hx, h)) < 0) {
                         /* make sure data_partitioning is cleared if it was set
                          * before, so we don't try decoding a slice without a valid
@@ -1699,11 +1710,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                         avctx->skip_frame < AVDISCARD_ALL)
                         context_count++;
                     break;
-                case NAL_SEI:
+                case NAL_SEI://解析SEI补充增强信息单元
                     init_get_bits(&h->gb, ptr, bit_length);
                     ff_h264_decode_sei(h);
                     break;
-                case NAL_SPS:
+                case NAL_SPS://解析SPS序列参数集
                     init_get_bits(&h->gb, ptr, bit_length);
                     if (ff_h264_decode_seq_parameter_set(h) < 0 && (h->is_avc ? nalsize : 1)) {
                         av_log(h->avctx, AV_LOG_DEBUG,
@@ -1718,7 +1729,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                     }
                     
                     break;
-                case NAL_PPS:
+                case NAL_PPS://解析PPS图像参数集
                     init_get_bits(&h->gb, ptr, bit_length);
                     ff_h264_decode_picture_parameter_set(h, bit_length);
                     break;
