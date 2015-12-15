@@ -17,10 +17,12 @@
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
 #include "libavutil/pixdesc.h"
+#include "h264_iOS8HD.h"
 #import "KxAudioManager.h"
 #import "KxLogger.h"
 
 //#define USE_iOS8HW_DECODING
+extern AVCodec ff_h264HD_decoder;
 
 ////////////////////////////////////////////////////////////////////////////////
 NSString * kxmovieErrorDomain = @"ru.kolyvan.kxmovie";
@@ -706,6 +708,9 @@ static int interrupt_callback(void *ctx);
 {
     av_log_set_callback(FFLog);
     av_register_all();
+
+    avcodec_register(&ff_h264HD_decoder);
+    
     avformat_network_init();
 }
 
@@ -851,7 +856,17 @@ static int interrupt_callback(void *ctx);
     AVCodecContext *codecCtx = _formatCtx->streams[videoStream]->codec;
     
     // find the decoder for the video stream
-    AVCodec *codec = avcodec_find_decoder(codecCtx->codec_id);
+    AVCodec *codec = NULL;
+    if (AV_CODEC_ID_H264 == codecCtx->codec_id)
+    {
+        codec = &ff_h264HD_decoder;
+        codecCtx->codec = codec;
+    }
+    else
+    {
+        codec = avcodec_find_decoder(codecCtx->codec_id);
+    }
+    
     if (!codec)
         return kxMovieErrorCodecNotFound;
     
