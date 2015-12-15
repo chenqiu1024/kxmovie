@@ -21,8 +21,13 @@
 #import "KxAudioManager.h"
 #import "KxLogger.h"
 
-//#define USE_iOS8HW_DECODING
+#define USE_MY_H264_DECODER
+
+#ifdef USE_MY_H264_DECODER
 extern AVCodec ff_h264HD_decoder;
+#endif
+
+//#define USE_iOS8HW_DECODING
 
 ////////////////////////////////////////////////////////////////////////////////
 NSString * kxmovieErrorDomain = @"ru.kolyvan.kxmovie";
@@ -708,9 +713,9 @@ static int interrupt_callback(void *ctx);
 {
     av_log_set_callback(FFLog);
     av_register_all();
-
+#ifdef USE_MY_H264_DECODER
     avcodec_register(&ff_h264HD_decoder);
-    
+#endif
     avformat_network_init();
 }
 
@@ -857,12 +862,14 @@ static int interrupt_callback(void *ctx);
     
     // find the decoder for the video stream
     AVCodec *codec = NULL;
+#ifdef USE_MY_H264_DECODER
     if (AV_CODEC_ID_H264 == codecCtx->codec_id)
     {
         codec = &ff_h264HD_decoder;
         codecCtx->codec = codec;
     }
     else
+#endif
     {
         codec = avcodec_find_decoder(codecCtx->codec_id);
     }
