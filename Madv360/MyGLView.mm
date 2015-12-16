@@ -19,21 +19,20 @@
 
 #define USE_YUV_TEXTURE
 
-//#define SPHERE_RENDERING
-
 #ifdef SPHERE_RENDERING
-//#define DRAW_GRID_SPHERE
+    #define DRAW_GRID_SPHERE
+    #define CONVERT_WITH_LUT
 #endif
 
 #define CLIP_WIDTH    6
 #define CLIP_Z_NEAR   2
-#define CLIP_Z_FAR    256
+#define CLIP_Z_FAR    1024
 
 #define SPHERE_RADIUS 255
-#define LONGITUDE_SEGMENTS  180
-#define LATITUDE_SEGMENTS 180
+#define LONGITUDE_SEGMENTS  10
+#define LATITUDE_SEGMENTS 10
 
-#define Z_SHIFT   0
+#define Z_SHIFT   -640
 
 GLfloat vertexDatas[] = {
     -1,-1,1,1,   1,0,0,1,   0,0,// 0: LB
@@ -128,6 +127,8 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
     free(RY);
 }
 
+static GLfloat* s_gridColors;
+
 @interface MyGLView ()
 {
     CADisplayLink* _displayLink;
@@ -173,7 +174,6 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
 //    CC3Vector4 _quaternion;
     
     Mesh3D _mesh;
-    GLfloat* _gridColors;
 }
 
 @end
@@ -188,7 +188,7 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
 }
 
 - (void) dealloc {
-    free(_gridColors);
+//    free(_gridColors);
 #ifdef USE_VAO
     glDeleteVertexArraysOES(1, &_vao);
     glDeleteBuffers(1, &_vertexBuffer);
@@ -227,16 +227,35 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
         [self prepareTexture];
         [self prepareGLProgram];
 #ifdef SPHERE_RENDERING
-        _mesh = createSphere(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
-        convertTexCoordWithLUT(_mesh.vertices, _mesh.vertexCount);
+//        _mesh = createSphere(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
+        _mesh = createGrids(2160, 1080, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
+#ifdef CONVERT_WITH_LUT
+        if (rand() % 2)
+            convertTexCoordWithLUT(_mesh.vertices, _mesh.vertexCount);
+#endif
+        
 #ifdef DRAW_GRID_SPHERE
-        _gridColors = (GLfloat*) malloc(3 * sizeof(GLfloat) * LONGITUDE_SEGMENTS * LATITUDE_SEGMENTS);
-        for (int i=0; i<LONGITUDE_SEGMENTS*LATITUDE_SEGMENTS; i++)
-        {
-            _gridColors[i*3] = (float)(rand() % 256) / 255.f;
-            _gridColors[i*3+1] = (float)(rand() % 256) / 255.f;
-            _gridColors[i*3+2] = (float)(rand() % 256) / 255.f;
-        }
+        static dispatch_once_t once;
+        dispatch_once(&once, ^{
+            s_gridColors = (GLfloat*) malloc(3 * sizeof(GLfloat) * LONGITUDE_SEGMENTS * LATITUDE_SEGMENTS);
+            int index = 0;
+            for (int iR=0; iR<LATITUDE_SEGMENTS; iR++)
+            {
+                for (int iC=0; iC<LONGITUDE_SEGMENTS; iC++)
+                {
+                    index++;
+                    s_gridColors[index*3] = ((float)iR / (float)LATITUDE_SEGMENTS);
+                    s_gridColors[index*3+1] = ((float)iC / (float)LONGITUDE_SEGMENTS);
+                    s_gridColors[index*3+2] = s_gridColors[index*3+1];
+                }
+            }
+//            for (int i=0; i<LONGITUDE_SEGMENTS*LATITUDE_SEGMENTS; i++)
+//            {
+//                s_gridColors[i*3] = (float)(rand() % 256) / 255.f;
+//                s_gridColors[i*3+1] = (float)(rand() % 256) / 255.f;
+//                s_gridColors[i*3+2] = (float)(rand() % 256) / 255.f;
+//            }
+        });
 #endif
 #else
         _mesh = createQuad(P4C4T2fMake(-1,-1,0,1, 0,0,0,0, 0,1),
@@ -419,9 +438,9 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
     glEnableVertexAttribArray(_atrColor);
     glEnableVertexAttribArray(_atrTexCoord);
 #ifdef DRAW_GRID_SPHERE
-    glUniform3fv(_uniGridColors, 6*6, _gridColors);
-    glUniform1i(_uniLongitudeFragments, 6);
-    glUniform1i(_uniLatitudeFragments, 6);
+    glUniform3fv(_uniGridColors, LONGITUDE_SEGMENTS*LATITUDE_SEGMENTS, s_gridColors);
+    glUniform1i(_uniLongitudeFragments, LONGITUDE_SEGMENTS);
+    glUniform1i(_uniLatitudeFragments, LATITUDE_SEGMENTS);
 #endif
 
 #ifdef USE_YUV_TEXTURE

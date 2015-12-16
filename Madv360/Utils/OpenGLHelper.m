@@ -244,6 +244,45 @@ Mesh3D createSphere(GLfloat radius, int longitudeSegments, int latitudeSegments)
     return mesh;
 }
 
+Mesh3D createGrids(GLfloat width, GLfloat height, int columns, int rows) {
+    Mesh3D mesh;
+    // (longitudeSegments + 1) Longitude circles, (latitudeSegments + 1) Latitude circles:
+    mesh.vertexCount = (columns + 1) * (rows + 1);
+    mesh.vertices = (P4C4T2f*) malloc(sizeof(P4C4T2f) * mesh.vertexCount);
+    // Vertices:
+    int iVertex = 0;
+    for (int iRow=0; iRow<=rows; ++iRow)
+    {
+        GLfloat y = height / 2 - height * iRow / rows;
+        for (int iCol=0; iCol<=columns; ++iCol)
+        {
+            GLfloat x = width * iCol / columns - width / 2;
+            GLfloat s = iCol == columns ? (width - 1) / width : (GLfloat)iCol / (GLfloat)columns;
+            GLfloat t = iRow == rows ? (height - 1) / height : (GLfloat)iRow / (GLfloat)rows;
+            mesh.vertices[iVertex++] = P4C4T2fMake(x,y,0,1, 0,1,0,1, s,t);
+        }
+    }
+    // Indices:
+    mesh.primitiveCount = rows;// (latitudeSegments) strips
+    mesh.primitives = (DrawablePrimitive*) malloc(sizeof(DrawablePrimitive) * mesh.primitiveCount);
+    // Strips parallel with latitude circles:
+    for (int i=0; i<mesh.primitiveCount; ++i)
+    {
+        mesh.primitives[i].type = GL_TRIANGLE_STRIP;
+        mesh.primitives[i].indexCount = 2 * (columns + 1);
+        mesh.primitives[i].indices = (GLshort*) malloc(sizeof(GLshort) * mesh.primitives[i].indexCount);
+        GLshort* pDst = mesh.primitives[i].indices;
+        GLshort index = i * (columns + 1);
+        for (int j=columns; j>=0; --j)
+        {
+            *pDst++ = index;
+            *pDst++ = (index + columns + 1);
+            ++index;
+        }
+    }
+    return mesh;
+}
+
 Mesh3D createQuad(P4C4T2f v0, P4C4T2f v1, P4C4T2f v2, P4C4T2f v3) {
     Mesh3D quad;
     quad.vertexCount = 4;

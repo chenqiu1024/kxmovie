@@ -71,6 +71,8 @@ extern "C" {
     
     Mesh3D createSphere(GLfloat radius, int longitudeSegments, int latitudeSegments);
     
+    Mesh3D createGrids(GLfloat width, GLfloat height, int columns, int rows);
+    
     Mesh3D createQuad(P4C4T2f v0, P4C4T2f v1, P4C4T2f v2, P4C4T2f v3);
     
 #ifdef __cplusplus
