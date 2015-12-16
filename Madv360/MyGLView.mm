@@ -20,7 +20,7 @@
 #define USE_YUV_TEXTURE
 
 #ifdef SPHERE_RENDERING
-    #define DRAW_GRID_SPHERE
+//    #define DRAW_GRID_SPHERE
     #define CONVERT_WITH_LUT
 #endif
 
@@ -29,10 +29,10 @@
 #define CLIP_Z_FAR    1024
 
 #define SPHERE_RADIUS 255
-#define LONGITUDE_SEGMENTS  10
-#define LATITUDE_SEGMENTS 10
+#define LONGITUDE_SEGMENTS  24
+#define LATITUDE_SEGMENTS 24
 
-#define Z_SHIFT   -640
+#define Z_SHIFT  -512
 
 GLfloat vertexDatas[] = {
     -1,-1,1,1,   1,0,0,1,   0,0,// 0: LB
@@ -40,25 +40,6 @@ GLfloat vertexDatas[] = {
     1,1,1,1,    0,0,1,1,   1,1,// 2: RT
     1,-1,1,1,    1,1,1,1,   1,0,// 3: RB
 };
-
-GLint createLUTTextureWithPNG(NSString* pngFile) {
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
-    UIImage* img = [UIImage imageNamed:pngFile];
-    CFDataRef imgData = CGDataProviderCopyData(CGImageGetDataProvider(img.CGImage));
-    const uint8_t* data = CFDataGetBytePtr(imgData);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, img.size.width, img.size.height, 0, GL_ALPHA, GL_UNSIGNED_SHORT, data);
-    CFRelease(imgData);
-    
-    return texture;
-}
 
 void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
     const int SrcWidth = 3200, SrcHeight = 1600;
@@ -146,6 +127,40 @@ void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
     free(RY);
 }
 
+GLint createLUTTextureWithMajorPNG(NSString* majorPNG, NSString* minorPNG, CGFloat srcDimension) {
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    UIImage* majorImg = [UIImage imageNamed:majorPNG];
+    CFDataRef majorImgData = CGDataProviderCopyData(CGImageGetDataProvider(majorImg.CGImage));
+    const GLushort* majorData = (const GLushort*) CFDataGetBytePtr(majorImgData);
+    UIImage* minorImg = [UIImage imageNamed:minorPNG];
+    CFDataRef minorImgData = CGDataProviderCopyData(CGImageGetDataProvider(minorImg.CGImage));
+    const GLushort* minorData = (const GLushort*) CFDataGetBytePtr(minorImgData);
+    
+    NSInteger byteSize = CFDataGetLength(majorImgData);
+    NSInteger size = byteSize / sizeof(GLushort);
+    
+    GLfloat* lutValue = (GLfloat*) malloc(size * sizeof(GLfloat));
+    for (int i=0; i<size; i++)
+    {
+        lutValue[i] = ((float)majorData[i] + (float)minorData[i] / 1000.0f) / srcDimension;
+    }
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, majorImg.size.width, majorImg.size.height, 0, GL_LUMINANCE, GL_FLOAT, lutValue);
+    
+    free(lutValue);
+    CFRelease(majorImgData);
+    
+    return texture;
+}
+
 static GLfloat* s_gridColors;
 
 @interface MyGLView ()
@@ -188,28 +203,21 @@ static GLfloat* s_gridColors;
 #endif
     
 #ifdef CONVERT_WITH_LUT
-    GLint _uni_lLUT_xInt;
-    GLint _uni_lLUT_xMin;
-    GLint _uni_lLUT_yInt;
-    GLint _uni_lLUT_yMin;
-    GLint _uni_rLUT_xInt;
-    GLint _uni_rLUT_xMin;
-    GLint _uni_rLUT_yInt;
-    GLint _uni_rLUT_yMin;
+    GLint _uni_lLUT_x;
+    GLint _uni_lLUT_y;
+    GLint _uni_rLUT_x;
+    GLint _uni_rLUT_y;
     
     GLint _uni_dstSize;
     GLint _uni_srcSize;
     
     CGSize _lutDstSize;
+    CGSize _lutSrcSize;
 
-    GLuint _LXIntTexture;
-    GLuint _LXMinTexture;
-    GLuint _LYIntTexture;
-    GLuint _LYMinTexture;
-    GLuint _RXIntTexture;
-    GLuint _RXMinTexture;
-    GLuint _RYIntTexture;
-    GLuint _RYMinTexture;
+    GLuint _LXTexture;
+    GLuint _LYTexture;
+    GLuint _RXTexture;
+    GLuint _RYTexture;
     
 #endif
     
@@ -253,6 +261,8 @@ static GLfloat* s_gridColors;
 - (instancetype) initWithFrame:(CGRect)frame {
     if (self = [super initWithFrame:frame])
     {
+        _lutSrcSize = CGSizeMake(3200, 1600);
+        
         EAGLContext* eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
         [EAGLContext setCurrentContext:eaglContext];
         
@@ -412,14 +422,10 @@ static GLfloat* s_gridColors;
 #endif
     
 #ifdef CONVERT_WITH_LUT
-    _uni_lLUT_xInt = glGetUniformLocation(_shaderProgram, "u_lLUT_xInt");
-    _uni_lLUT_xMin = glGetUniformLocation(_shaderProgram, "u_lLUT_xMin");
-    _uni_lLUT_yInt = glGetUniformLocation(_shaderProgram, "u_lLUT_yInt");
-    _uni_lLUT_yMin = glGetUniformLocation(_shaderProgram, "u_lLUT_yMin");
-    _uni_rLUT_xInt = glGetUniformLocation(_shaderProgram, "u_rLUT_xInt");
-    _uni_rLUT_xMin = glGetUniformLocation(_shaderProgram, "u_rLUT_xMin");
-    _uni_rLUT_yInt = glGetUniformLocation(_shaderProgram, "u_rLUT_yInt");
-    _uni_rLUT_yMin = glGetUniformLocation(_shaderProgram, "u_rLUT_yMin");
+    _uni_lLUT_x = glGetUniformLocation(_shaderProgram, "u_lLUT_x");
+    _uni_lLUT_y = glGetUniformLocation(_shaderProgram, "u_lLUT_y");
+    _uni_rLUT_x = glGetUniformLocation(_shaderProgram, "u_rLUT_x");
+    _uni_rLUT_y = glGetUniformLocation(_shaderProgram, "u_rLUT_y");
     _uni_dstSize = glGetUniformLocation(_shaderProgram, "u_dstSize");
     _uni_srcSize = glGetUniformLocation(_shaderProgram, "u_srcSize");
 #endif
@@ -495,15 +501,15 @@ static GLfloat* s_gridColors;
 - (void) prepareTextures {
     [self setTextureWithImage:[UIImage imageNamed:@"test.png"]];
 #ifdef CONVERT_WITH_LUT
-    NSArray* pngNames = @[@"L_x_int.png",@"L_x_min.png", @"L_y_int.png",@"L_y_min.png", @"R_x_int.png",@"R_x_min.png", @"R_y_int.png",@"R_y_min.png"];
-    GLuint* names[8] = {&_LXIntTexture, &_LXMinTexture, &_LYIntTexture, &_LYMinTexture, &_RXIntTexture, &_RXMinTexture, &_RYIntTexture, &_RYMinTexture};
-    for (int i=0; i<8; i++)
-    {
-        *names[i] = createLUTTextureWithPNG([pngNames objectAtIndex:i]);
-    }
     
-    UIImage* img = [UIImage imageNamed:pngNames[0]];
+    UIImage* img = [UIImage imageNamed:@"L_x_int.png"];
     _lutDstSize = img.size;
+    
+    _LXTexture = createLUTTextureWithMajorPNG(@"L_x_int.png",@"L_x_min.png", _lutSrcSize.width);
+    _LYTexture = createLUTTextureWithMajorPNG(@"L_y_int.png",@"L_y_min.png", _lutSrcSize.height);
+    _RXTexture = createLUTTextureWithMajorPNG(@"R_x_int.png",@"R_x_min.png", _lutSrcSize.width);
+    _RYTexture = createLUTTextureWithMajorPNG(@"R_y_int.png",@"R_y_min.png", _lutSrcSize.height);
+    
 #endif
 }
 
@@ -558,11 +564,9 @@ static GLfloat* s_gridColors;
 #endif
     
 #ifdef CONVERT_WITH_LUT
-    static GLint uniLUTs[8] = {_uni_lLUT_xInt, _uni_lLUT_xMin, _uni_lLUT_yInt, _uni_lLUT_yMin,
-    _uni_rLUT_xInt, _uni_rLUT_xMin, _uni_rLUT_yInt, _uni_rLUT_yMin};
-    static GLuint texLUTs[8] = {_LXIntTexture, _LXMinTexture, _LYIntTexture, _LYMinTexture,
-        _RXIntTexture, _RXMinTexture, _RYIntTexture, _RYMinTexture};
-    for (int i=0; i<8; i++)
+    static GLint uniLUTs[4] = {_uni_lLUT_x, _uni_lLUT_y, _uni_rLUT_x, _uni_rLUT_y};
+    static GLuint texLUTs[4] = {_LXTexture, _LYTexture, _RXTexture, _RYTexture};
+    for (int i=0; i<4; i++)
     {
         glActiveTexture(GL_TEXTURE3 + i);
         glBindTexture(GL_TEXTURE_2D, texLUTs[i]);
@@ -570,7 +574,7 @@ static GLfloat* s_gridColors;
     }
     
     glUniform2f(_uni_dstSize, _lutDstSize.width, _lutDstSize.height);
-    glUniform2f(_uni_srcSize, 3200.f, 1600.f);
+    glUniform2f(_uni_srcSize, _lutSrcSize.width, _lutSrcSize.height);
 #endif
 }
 

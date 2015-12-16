@@ -2,7 +2,7 @@
 precision highp float;
 //#endif
 
-#define DRAW_GRID_SPHERE
+//#define DRAW_GRID_SPHERE
 
 #define CONVERT_WITH_LUT
 
@@ -11,14 +11,10 @@ uniform sampler2D u_texture_y;
 uniform sampler2D u_texture_u;
 uniform sampler2D u_texture_v;
 
-uniform sampler2D u_lLUT_xInt;
-uniform sampler2D u_lLUT_xMin;
-uniform sampler2D u_lLUT_yInt;
-uniform sampler2D u_lLUT_yMin;
-uniform sampler2D u_rLUT_xInt;
-uniform sampler2D u_rLUT_xMin;
-uniform sampler2D u_rLUT_yInt;
-uniform sampler2D u_rLUT_yMin;
+uniform sampler2D u_lLUT_x;
+uniform sampler2D u_lLUT_y;
+uniform sampler2D u_rLUT_x;
+uniform sampler2D u_rLUT_y;
 
 uniform highp vec2 u_dstSize;
 uniform highp vec2 u_srcSize;
@@ -32,14 +28,20 @@ vec2 texCoordMappedWithLUT(highp vec2 dstTexCoord) {
     if (dstTexCoord.s >= 0.25 && dstTexCoord.s < 0.75)
     {
         // Use right LUT:
-        srcTexCoord.x = texture2D(u_rLUT_xInt, dstTexCoord) + texture2D(u_rLUT_xMin, dstTexCoord) / 1000.0 + u_srcSize.x / 2.0;
-        srcTexCoord.y = texture2D(u_rLUT_yInt, dstTexCoord) + texture2D(u_rLUT_yMin, dstTexCoord) / 1000.0;
+        highp float xSrc = float(texture2D(u_rLUT_x, dstTexCoord).r) * u_srcSize.x;
+        highp float ySrc = float(texture2D(u_rLUT_y, dstTexCoord).r) * u_srcSize.y;
+        
+        srcTexCoord.x = xSrc + u_srcSize.x / 2.0;
+        srcTexCoord.y = ySrc;
     }
     else
     {
         // Use left LUT:
-        srcTexCoord.x = texture2D(u_lLUT_xInt, dstTexCoord) + texture2D(u_lLUT_xMin, dstTexCoord) / 1000.0;
-        srcTexCoord.y = texture2D(u_lLUT_yInt, dstTexCoord) + texture2D(u_lLUT_yMin, dstTexCoord) / 1000.0;
+        highp float xSrc = float(texture2D(u_lLUT_x, dstTexCoord).r) * u_srcSize.x;
+        highp float ySrc = float(texture2D(u_lLUT_y, dstTexCoord).r) * u_srcSize.y;
+        
+        srcTexCoord.x = xSrc;
+        srcTexCoord.y = ySrc;
     }
     srcTexCoord = srcTexCoord / u_srcSize;
     return srcTexCoord;
@@ -66,6 +68,11 @@ void main()
     highp float r = y +             1.402 * v;
     highp float g = y - 0.344 * u - 0.714 * v;
     highp float b = y + 1.772 * u;
+    
+//    ///!!!For Debug:
+//    r = texture2D(u_rLUT_x, texCoord).r;
+//    g = r;
+//    b = r;
     
     gl_FragColor = vec4(r,g,b,1.0);
 #endif
