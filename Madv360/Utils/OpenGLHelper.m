@@ -259,7 +259,7 @@ Mesh3D createGrids(GLfloat width, GLfloat height, int columns, int rows) {
             GLfloat x = width * iCol / columns - width / 2;
             GLfloat s = iCol == columns ? (width - 1) / width : (GLfloat)iCol / (GLfloat)columns;
             GLfloat t = iRow == rows ? (height - 1) / height : (GLfloat)iRow / (GLfloat)rows;
-            mesh.vertices[iVertex++] = P4C4T2fMake(x,y,0,1, 0,1,0,1, s,t);
+            mesh.vertices[iVertex++] = P4C4T2fMake(x,y,0,1, 0,1,0,1, s,1-t);
         }
     }
     // Indices:
