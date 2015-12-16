@@ -22,17 +22,22 @@
 #ifdef SPHERE_RENDERING
 //    #define DRAW_GRID_SPHERE
     #define CONVERT_WITH_LUT
+//#define EXPAND_AS_PLANE
 #endif
 
 #define CLIP_WIDTH    6
 #define CLIP_Z_NEAR   2
 #define CLIP_Z_FAR    1024
 
-#define SPHERE_RADIUS 255
-#define LONGITUDE_SEGMENTS  24
-#define LATITUDE_SEGMENTS 24
+#define SPHERE_RADIUS 128
+#define LONGITUDE_SEGMENTS  60
+#define LATITUDE_SEGMENTS 60
 
-#define Z_SHIFT  -512
+#ifdef EXPAND_AS_PLANE
+#define Z_SHIFT -512
+#else
+#define Z_SHIFT  0
+#endif
 
 GLfloat vertexDatas[] = {
     -1,-1,1,1,   1,0,0,1,   0,0,// 0: LB
@@ -261,8 +266,9 @@ static GLfloat* s_gridColors;
 - (instancetype) initWithFrame:(CGRect)frame {
     if (self = [super initWithFrame:frame])
     {
+#ifdef CONVERT_WITH_LUT
         _lutSrcSize = CGSizeMake(3200, 1600);
-        
+#endif
         EAGLContext* eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
         [EAGLContext setCurrentContext:eaglContext];
         
@@ -283,8 +289,11 @@ static GLfloat* s_gridColors;
         [self prepareTextures];
         [self prepareGLProgram];
 #ifdef SPHERE_RENDERING
-//        _mesh = createSphere(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
+#ifndef EXPAND_AS_PLANE
+        _mesh = createSphereV0(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
+#else
         _mesh = createGrids(2160, 1080, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
+#endif
 //#ifdef CONVERT_WITH_LUT
 //        if (rand() % 2)
 //            convertTexCoordWithLUT(_mesh.vertices, _mesh.vertexCount);
@@ -305,12 +314,12 @@ static GLfloat* s_gridColors;
                     s_gridColors[index*3+2] = s_gridColors[index*3+1];
                 }
             }
-//            for (int i=0; i<LONGITUDE_SEGMENTS*LATITUDE_SEGMENTS; i++)
-//            {
-//                s_gridColors[i*3] = (float)(rand() % 256) / 255.f;
-//                s_gridColors[i*3+1] = (float)(rand() % 256) / 255.f;
-//                s_gridColors[i*3+2] = (float)(rand() % 256) / 255.f;
-//            }
+            for (int i=0; i<LONGITUDE_SEGMENTS*LATITUDE_SEGMENTS; i++)
+            {
+                s_gridColors[i*3] = (float)(rand() % 256) / 255.f;
+                s_gridColors[i*3+1] = (float)(rand() % 256) / 255.f;
+                s_gridColors[i*3+2] = (float)(rand() % 256) / 255.f;
+            }
         });
 #endif
 #else

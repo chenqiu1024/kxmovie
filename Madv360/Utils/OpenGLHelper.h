@@ -70,6 +70,7 @@ extern "C" {
     void Mesh3DRelease(Mesh3D mesh);
     
     Mesh3D createSphere(GLfloat radius, int longitudeSegments, int latitudeSegments);
+    Mesh3D createSphereV0(GLfloat radius, int longitudeSegments, int latitudeSegments);
     
     Mesh3D createGrids(GLfloat width, GLfloat height, int columns, int rows);
     

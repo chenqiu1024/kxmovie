@@ -194,8 +194,8 @@ Mesh3D createSphere(GLfloat radius, int longitudeSegments, int latitudeSegments)
     mesh.vertexCount = 2 + (longitudeSegments + 1) * (latitudeSegments - 1);
     mesh.vertices = (P4C4T2f*) malloc(sizeof(P4C4T2f) * mesh.vertexCount);
     // Vertices:
-    mesh.vertices[mesh.vertexCount - 2] = P4C4T2fMake(0,radius,0,1, 0,1,0,1, 0.5,0);//North
-    mesh.vertices[mesh.vertexCount - 1] = P4C4T2fMake(0,-radius,0,1, 0,1,0,1, 0.5,1);//South
+    mesh.vertices[mesh.vertexCount - 2] = P4C4T2fMake(0,radius,0,1, 0,1,0,1, 0.5,1);//North
+    mesh.vertices[mesh.vertexCount - 1] = P4C4T2fMake(0,-radius,0,1, 0,1,0,1, 0.5,0);//South
     int iVertex = 0;
     for (int iLat=1; iLat<latitudeSegments; ++iLat)
     {
@@ -209,7 +209,7 @@ Mesh3D createSphere(GLfloat radius, int longitudeSegments, int latitudeSegments)
             GLfloat z = xzRadius * sin(phi);
             GLfloat s = (GLfloat)iLon / (GLfloat)longitudeSegments;
             GLfloat t = (GLfloat)iLat / (GLfloat)latitudeSegments;
-            mesh.vertices[iVertex++] = P4C4T2fMake(x,y,z,1, 0,1,0,1, s,t);
+            mesh.vertices[iVertex++] = P4C4T2fMake(x,y,z,1, 0,1,0,1, s,1-t);
         }
     }
     // Indices:
@@ -234,6 +234,49 @@ Mesh3D createSphere(GLfloat radius, int longitudeSegments, int latitudeSegments)
         mesh.primitives[i].indices = (GLshort*) malloc(sizeof(GLshort) * mesh.primitives[i].indexCount);
         GLshort* pDst = mesh.primitives[i].indices;
         GLshort index = (i - 2) * (longitudeSegments + 1);
+        for (int j=longitudeSegments; j>=0; --j)
+        {
+            *pDst++ = index;
+            *pDst++ = (index + longitudeSegments + 1);
+            ++index;
+        }
+    }
+    return mesh;
+}
+
+Mesh3D createSphereV0(GLfloat radius, int longitudeSegments, int latitudeSegments) {
+    Mesh3D mesh;
+    // (longitudeSegments + 1) Longitude circles, (latitudeSegments + 1) Latitude circles:
+    mesh.vertexCount = (longitudeSegments + 1) * (latitudeSegments + 1);
+    mesh.vertices = (P4C4T2f*) malloc(sizeof(P4C4T2f) * mesh.vertexCount);
+    // Vertices:
+    int iVertex = 0;
+    for (int iLat=0; iLat<=latitudeSegments; ++iLat)
+    {
+        GLfloat theta = M_PI * iLat / latitudeSegments;
+        GLfloat y = radius * cos(theta);
+        GLfloat xzRadius = radius * sin(theta);
+        for (int iLon=0; iLon<=longitudeSegments; ++iLon)
+        {
+            GLfloat phi = 2*M_PI * iLon / longitudeSegments;
+            GLfloat x = xzRadius * cos(phi);
+            GLfloat z = xzRadius * sin(phi);
+            GLfloat s = (GLfloat)iLon / (GLfloat)longitudeSegments;
+            GLfloat t = (GLfloat)iLat / (GLfloat)latitudeSegments;
+            mesh.vertices[iVertex++] = P4C4T2fMake(x,y,z,1, 0,1,0,1, s,1-t);
+        }
+    }
+    // Indices:
+    mesh.primitiveCount = latitudeSegments;// (latitudeSegments) strips
+    mesh.primitives = (DrawablePrimitive*) malloc(sizeof(DrawablePrimitive) * mesh.primitiveCount);
+    // Strips parallel with latitude circles:
+    for (int i=0; i<mesh.primitiveCount; ++i)
+    {
+        mesh.primitives[i].type = GL_TRIANGLE_STRIP;
+        mesh.primitives[i].indexCount = 2 * (longitudeSegments + 1);
+        mesh.primitives[i].indices = (GLshort*) malloc(sizeof(GLshort) * mesh.primitives[i].indexCount);
+        GLshort* pDst = mesh.primitives[i].indices;
+        GLshort index = i * (longitudeSegments + 1);
         for (int j=longitudeSegments; j>=0; --j)
         {
             *pDst++ = index;

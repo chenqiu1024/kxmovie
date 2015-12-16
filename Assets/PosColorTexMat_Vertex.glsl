@@ -15,7 +15,7 @@ varying vec2 v_texCoord;
 
 void main(void) { // 4
     v_color = a_color; // 5
-    v_texCoord = a_texCoord;
+    v_texCoord = vec2(a_texCoord.s, a_texCoord.t);
     // Modify gl_Position line as follows
     gl_Position = u_projectionMat * u_modelMat * a_position;
 }
