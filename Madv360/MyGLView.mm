@@ -41,6 +41,25 @@ GLfloat vertexDatas[] = {
     1,-1,1,1,    1,1,1,1,   1,0,// 3: RB
 };
 
+GLint createLUTTextureWithPNG(NSString* pngFile) {
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    UIImage* img = [UIImage imageNamed:pngFile];
+    CFDataRef imgData = CGDataProviderCopyData(CGImageGetDataProvider(img.CGImage));
+    const uint8_t* data = CFDataGetBytePtr(imgData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, img.size.width, img.size.height, 0, GL_ALPHA, GL_UNSIGNED_SHORT, data);
+    CFRelease(imgData);
+    
+    return texture;
+}
+
 void convertTexCoordWithLUT(P4C4T2f* vertices, GLsizei vertexCount) {
     const int SrcWidth = 3200, SrcHeight = 1600;
     int width, height, size;
@@ -167,6 +186,33 @@ static GLfloat* s_gridColors;
     GLint _uniLatitudeFragments;
 #endif
 #endif
+    
+#ifdef CONVERT_WITH_LUT
+    GLint _uni_lLUT_xInt;
+    GLint _uni_lLUT_xMin;
+    GLint _uni_lLUT_yInt;
+    GLint _uni_lLUT_yMin;
+    GLint _uni_rLUT_xInt;
+    GLint _uni_rLUT_xMin;
+    GLint _uni_rLUT_yInt;
+    GLint _uni_rLUT_yMin;
+    
+    GLint _uni_dstSize;
+    GLint _uni_srcSize;
+    
+    CGSize _lutDstSize;
+
+    GLuint _LXIntTexture;
+    GLuint _LXMinTexture;
+    GLuint _LYIntTexture;
+    GLuint _LYMinTexture;
+    GLuint _RXIntTexture;
+    GLuint _RXMinTexture;
+    GLuint _RYIntTexture;
+    GLuint _RYMinTexture;
+    
+#endif
+    
     CGFloat _yawDegree;
     CGFloat _pitchDegree;
     CGPoint _prevTranslation;
@@ -224,15 +270,15 @@ static GLfloat* s_gridColors;
                                          kEAGLColorFormatRGBA8, kEAGLDrawablePropertyColorFormat, nil];
         
         [self rebindGLCanvas];
-        [self prepareTexture];
+        [self prepareTextures];
         [self prepareGLProgram];
 #ifdef SPHERE_RENDERING
 //        _mesh = createSphere(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
         _mesh = createGrids(2160, 1080, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
-#ifdef CONVERT_WITH_LUT
-        if (rand() % 2)
-            convertTexCoordWithLUT(_mesh.vertices, _mesh.vertexCount);
-#endif
+//#ifdef CONVERT_WITH_LUT
+//        if (rand() % 2)
+//            convertTexCoordWithLUT(_mesh.vertices, _mesh.vertexCount);
+//#endif
         
 #ifdef DRAW_GRID_SPHERE
         static dispatch_once_t once;
@@ -331,7 +377,13 @@ static GLfloat* s_gridColors;
 #endif
     
 #ifdef USE_YUV_TEXTURE
+    
+#ifdef CONVERT_WITH_LUT
+    const GLchar* const fragmentSource = [[NSString stringOfBundleFile:@"LUT_YUV_Fragment" extName:@"glsl"] UTF8String];
+#else
     const GLchar* const fragmentSource = [[NSString stringOfBundleFile:@"YUV_Fragment" extName:@"glsl"] UTF8String];
+#endif
+    
 #else
     const GLchar* const fragmentSource = [[NSString stringOfBundleFile:@"PosColorTex_Fragment" extName:@"glsl"] UTF8String];
 #endif
@@ -357,6 +409,19 @@ static GLfloat* s_gridColors;
     _uniLongitudeFragments = glGetUniformLocation(_shaderProgram, "u_longitudeFragments");
     _uniLatitudeFragments = glGetUniformLocation(_shaderProgram, "u_latitudeFragments");
 #endif
+#endif
+    
+#ifdef CONVERT_WITH_LUT
+    _uni_lLUT_xInt = glGetUniformLocation(_shaderProgram, "u_lLUT_xInt");
+    _uni_lLUT_xMin = glGetUniformLocation(_shaderProgram, "u_lLUT_xMin");
+    _uni_lLUT_yInt = glGetUniformLocation(_shaderProgram, "u_lLUT_yInt");
+    _uni_lLUT_yMin = glGetUniformLocation(_shaderProgram, "u_lLUT_yMin");
+    _uni_rLUT_xInt = glGetUniformLocation(_shaderProgram, "u_rLUT_xInt");
+    _uni_rLUT_xMin = glGetUniformLocation(_shaderProgram, "u_rLUT_xMin");
+    _uni_rLUT_yInt = glGetUniformLocation(_shaderProgram, "u_rLUT_yInt");
+    _uni_rLUT_yMin = glGetUniformLocation(_shaderProgram, "u_rLUT_yMin");
+    _uni_dstSize = glGetUniformLocation(_shaderProgram, "u_dstSize");
+    _uni_srcSize = glGetUniformLocation(_shaderProgram, "u_srcSize");
 #endif
 }
 
@@ -427,9 +492,19 @@ static GLfloat* s_gridColors;
 
 }
 
-- (void) prepareTexture {
+- (void) prepareTextures {
     [self setTextureWithImage:[UIImage imageNamed:@"test.png"]];
-    glBindTexture(GL_TEXTURE_2D, 0);
+#ifdef CONVERT_WITH_LUT
+    NSArray* pngNames = @[@"L_x_int.png",@"L_x_min.png", @"L_y_int.png",@"L_y_min.png", @"R_x_int.png",@"R_x_min.png", @"R_y_int.png",@"R_y_min.png"];
+    GLuint* names[8] = {&_LXIntTexture, &_LXMinTexture, &_LYIntTexture, &_LYMinTexture, &_RXIntTexture, &_RXMinTexture, &_RYIntTexture, &_RYMinTexture};
+    for (int i=0; i<8; i++)
+    {
+        *names[i] = createLUTTextureWithPNG([pngNames objectAtIndex:i]);
+    }
+    
+    UIImage* img = [UIImage imageNamed:pngNames[0]];
+    _lutDstSize = img.size;
+#endif
 }
 
 - (void) setGLProgramVariables {
@@ -480,6 +555,22 @@ static GLfloat* s_gridColors;
 //    CC3GLMatrix* identityMatrix = [CC3GLMatrix identity];
 //    glUniformMatrix4fv(_uniProjectionMat, 1, 0, identityMatrix.glMatrix);
 //    glUniformMatrix4fv(_uniModelMat, 1, 0, identityMatrix.glMatrix);
+#endif
+    
+#ifdef CONVERT_WITH_LUT
+    static GLint uniLUTs[8] = {_uni_lLUT_xInt, _uni_lLUT_xMin, _uni_lLUT_yInt, _uni_lLUT_yMin,
+    _uni_rLUT_xInt, _uni_rLUT_xMin, _uni_rLUT_yInt, _uni_rLUT_yMin};
+    static GLuint texLUTs[8] = {_LXIntTexture, _LXMinTexture, _LYIntTexture, _LYMinTexture,
+        _RXIntTexture, _RXMinTexture, _RYIntTexture, _RYMinTexture};
+    for (int i=0; i<8; i++)
+    {
+        glActiveTexture(GL_TEXTURE3 + i);
+        glBindTexture(GL_TEXTURE_2D, texLUTs[i]);
+        glUniform1i(uniLUTs[i], 3 + i);
+    }
+    
+    glUniform2f(_uni_dstSize, _lutDstSize.width, _lutDstSize.height);
+    glUniform2f(_uni_srcSize, 3200.f, 1600.f);
 #endif
 }
 

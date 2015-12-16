@@ -47,6 +47,9 @@
 		BB11C8C31C20013200A05BEC /* h264_iOS8HD.c in Sources */ = {isa = PBXBuildFile; fileRef = BB11C8C11C20013200A05BEC /* h264_iOS8HD.c */; };
 		BB11C8C41C20013200A05BEC /* h264_iOS8HD.c in Sources */ = {isa = PBXBuildFile; fileRef = BB11C8C11C20013200A05BEC /* h264_iOS8HD.c */; };
 		BB11C8C51C20013200A05BEC /* h264_iOS8HD.c in Sources */ = {isa = PBXBuildFile; fileRef = BB11C8C11C20013200A05BEC /* h264_iOS8HD.c */; };
+		BB11C8C71C211FDB00A05BEC /* LUT_YUV_Fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = BB11C8C61C211FDB00A05BEC /* LUT_YUV_Fragment.glsl */; };
+		BB11C8C81C211FDB00A05BEC /* LUT_YUV_Fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = BB11C8C61C211FDB00A05BEC /* LUT_YUV_Fragment.glsl */; };
+		BB11C8C91C211FDB00A05BEC /* LUT_YUV_Fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = BB11C8C61C211FDB00A05BEC /* LUT_YUV_Fragment.glsl */; };
 		BB167A5C1C0BEB37008BB8CA /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5B1C0BEB37008BB8CA /* CoreMedia.framework */; };
 		BB167A5E1C0BEB41008BB8CA /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5D1C0BEB41008BB8CA /* VideoToolbox.framework */; };
 		BB167A601C0BEB4C008BB8CA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB167A5F1C0BEB4C008BB8CA /* CoreGraphics.framework */; };
@@ -235,6 +238,7 @@
 		87FD6175163A75440090956E /* libkxmovie.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libkxmovie.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB11C8C11C20013200A05BEC /* h264_iOS8HD.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = h264_iOS8HD.c; sourceTree = "<group>"; };
 		BB11C8C21C20013200A05BEC /* h264_iOS8HD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = h264_iOS8HD.h; sourceTree = "<group>"; };
+		BB11C8C61C211FDB00A05BEC /* LUT_YUV_Fragment.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LUT_YUV_Fragment.glsl; sourceTree = "<group>"; };
 		BB167A5B1C0BEB37008BB8CA /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/CoreMedia.framework; sourceTree = DEVELOPER_DIR; };
 		BB167A5D1C0BEB41008BB8CA /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/VideoToolbox.framework; sourceTree = DEVELOPER_DIR; };
 		BB167A5F1C0BEB4C008BB8CA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.1.sdk/System/Library/Frameworks/CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
@@ -532,6 +536,7 @@
 				BB167A9C1C0BF5B0008BB8CA /* PosColorTex_Vertex.glsl */,
 				BB167A9D1C0BF5B0008BB8CA /* PosColorTexMat_Vertex.glsl */,
 				BB167AA11C0C29B0008BB8CA /* YUV_Fragment.glsl */,
+				BB11C8C61C211FDB00A05BEC /* LUT_YUV_Fragment.glsl */,
 			);
 			path = Assets;
 			sourceTree = "<group>";
@@ -682,6 +687,7 @@
 				BBADCA491C1AD967008527BC /* L_y_min.png in Resources */,
 				87E7941316390F6D000A0848 /* Default-568h@2x.png in Resources */,
 				BBADCA4C1C1AD967008527BC /* R_x_int.png in Resources */,
+				BB11C8C71C211FDB00A05BEC /* LUT_YUV_Fragment.glsl in Resources */,
 				87E794271639107F000A0848 /* kxmovie.bundle in Resources */,
 				BBADCA551C1AD967008527BC /* R_y_min.png in Resources */,
 			);
@@ -691,6 +697,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB11C8C81C211FDB00A05BEC /* LUT_YUV_Fragment.glsl in Resources */,
 				BB167B011C0C43FC008BB8CA /* YUV_Fragment.glsl in Resources */,
 				BB167B021C0C43FC008BB8CA /* PosColorTex_Fragment.glsl in Resources */,
 				BB167B031C0C43FC008BB8CA /* Default.png in Resources */,
@@ -714,6 +721,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB11C8C91C211FDB00A05BEC /* LUT_YUV_Fragment.glsl in Resources */,
 				BB167B711C0C47E6008BB8CA /* YUV_Fragment.glsl in Resources */,
 				BB167B721C0C47E6008BB8CA /* PosColorTex_Fragment.glsl in Resources */,
 				BB167B731C0C47E6008BB8CA /* Default.png in Resources */,
