@@ -42,6 +42,7 @@ typedef enum {
         
     KxVideoFrameFormatRGB,
     KxVideoFrameFormatYUV,
+    KxVideoFrameFormatCVBuffer, //core video buffer format by spy
     
 } KxVideoFrameFormat;
 
@@ -72,6 +73,12 @@ typedef enum {
 @property (readonly, nonatomic, strong) NSData *chromaB;
 @property (readonly, nonatomic, strong) NSData *chromaR;
 @end
+
+//ios vt decoder frame by spy
+@interface KxVideoFrameCVBuffer : KxVideoFrame
+@property (readonly, nonatomic) CVBufferRef cvBufferRef;
+@end
+
 
 @interface KxArtworkFrame : KxMovieFrame
 @property (readonly, nonatomic, strong) NSData *picture;
@@ -117,6 +124,7 @@ typedef BOOL(^KxMovieDecoderInterruptCallback)();
 -(void) closeFile;
 
 - (BOOL) setupVideoFrameFormat: (KxVideoFrameFormat) format;
+- (KxVideoFrameFormat) getVideoFrameFormat;
 
 - (NSArray *) decodeFrames: (CGFloat) minDuration;
 

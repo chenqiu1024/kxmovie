@@ -11,7 +11,6 @@
 
 #import "KxMovieViewController.h"
 #import <MediaPlayer/MediaPlayer.h>
-#import "MyGLView.h"
 #import <QuartzCore/QuartzCore.h>
 #import "KxMovieDecoder.h"
 #import "KxAudioManager.h"

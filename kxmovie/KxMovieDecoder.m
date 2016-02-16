@@ -25,6 +25,7 @@
 
 #ifdef USE_MY_H264_DECODER
 extern AVCodec ff_h264HD_decoder;
+extern AVCodec ff_h264VTHD_decoder;
 #endif
 
 //#define USE_iOS8HW_DECODING
@@ -365,6 +366,16 @@ static int interrupt_callback(void *ctx);
 @implementation KxVideoFrameYUV
 - (KxVideoFrameFormat) format { return KxVideoFrameFormatYUV; }
 @end
+
+//ios vt decoder frame by spy
+@interface KxVideoFrameCVBuffer()
+@property (readwrite, nonatomic) CVBufferRef cvBufferRef;
+@end
+
+@implementation KxVideoFrameCVBuffer
+- (KxVideoFrameFormat) format { return KxVideoFrameFormatCVBuffer; }
+@end
+
 
 @interface KxArtworkFrame()
 @property (readwrite, nonatomic, strong) NSData *picture;
@@ -714,7 +725,8 @@ static int interrupt_callback(void *ctx);
     av_log_set_callback(FFLog);
     av_register_all();
 #ifdef USE_MY_H264_DECODER
-    avcodec_register(&ff_h264HD_decoder);
+    //avcodec_register(&ff_h264HD_decoder);
+    avcodec_register(&ff_h264VTHD_decoder);
 #endif
     avformat_network_init();
 }
@@ -865,7 +877,8 @@ static int interrupt_callback(void *ctx);
 #ifdef USE_MY_H264_DECODER
     if (AV_CODEC_ID_H264 == codecCtx->codec_id)
     {
-        codec = &ff_h264HD_decoder;
+        //codec = &ff_h264HD_decoder;
+        codec = &ff_h264VTHD_decoder;
         codecCtx->codec = codec;
     }
     else
@@ -1178,7 +1191,14 @@ static int interrupt_callback(void *ctx);
                                          _videoCodecCtx->width / 2,
                                          _videoCodecCtx->height / 2);
         frame = yuvFrame;
-    } else {
+    }
+    else if (_videoFrameFormat == KxVideoFrameFormatCVBuffer){
+        KxVideoFrameCVBuffer * cvBufferFrame = [[KxVideoFrameCVBuffer alloc] init];
+        cvBufferFrame.cvBufferRef = (CVBufferRef)_videoFrame->data[0];
+        //CVBufferRetain(cvBufferFrame.cvBufferRef);
+        frame = cvBufferFrame;
+    }
+    else {
         
         if (!_swsContext &&
             ![self setupScaler]) {
@@ -1645,13 +1665,25 @@ NSString * const naluTypesStrings[] = {
         _videoCodecCtx &&
         (_videoCodecCtx->pix_fmt == AV_PIX_FMT_YUV420P || _videoCodecCtx->pix_fmt == AV_PIX_FMT_YUVJ420P)) {
         
-        _videoFrameFormat = KxVideoFrameFormatYUV;
+        if (_videoCodecCtx->codec)
+        {
+            if (!strcmp(_videoCodecCtx->codec->name, "h264VTHD"))
+                _videoFrameFormat = KxVideoFrameFormatCVBuffer;
+        }
+        else
+            _videoFrameFormat = KxVideoFrameFormatYUV;
         return YES;
     }
     
     _videoFrameFormat = KxVideoFrameFormatRGB;
     return _videoFrameFormat == format;
 }
+
+- (KxVideoFrameFormat) getVideoFrameFormat
+{
+    return _videoFrameFormat;
+}
+
 
 - (NSArray *) decodeFrames: (CGFloat) minDuration
 {
@@ -1783,7 +1815,7 @@ NSString * const naluTypesStrings[] = {
                     }
                 }
 #endif
-                if (0 == len)
+                if (len <= 0)
                     break;
                 
                 pktSize -= len;

@@ -341,6 +341,124 @@ static void mat4f_LoadOrtho(float left, float right, float bottom, float top, fl
 
 @end
 
+//core video buffer render by spy
+@interface KxMovieGLRenderer_CVBuffer : NSObject<KxMovieGLRenderer> {
+    EAGLContext* _context;
+    GLint _uniformSampler;
+    GLuint _texture;
+    struct __CVOpenGLESTextureCache * _videoTextureCache;
+    struct __CVOpenGLESTexture *      _videoDestTexture;
+}
+-(void)setEGLContext:(EAGLContext*)context;
+@end
+
+@implementation KxMovieGLRenderer_CVBuffer
+
+-(void)setEGLContext:(EAGLContext*)context
+{
+    _context = context;
+}
+
+- (BOOL) isValid{
+    return (_texture != 0);
+}
+
+- (NSString *) fragmentShader{
+    return rgbFragmentShaderString;//@"";
+}
+
+- (void) resolveUniforms: (GLuint) program{
+    
+    _uniformSampler = glGetUniformLocation(program, "s_texture");
+}
+
+- (void) setFrame: (KxVideoFrame *) frame{
+    KxVideoFrameCVBuffer *cvbFrame = (KxVideoFrameCVBuffer *)frame;
+    
+    CVBufferRef cvBufferRef = cvbFrame.cvBufferRef;
+    
+    if (!_videoTextureCache) {
+        CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, _context, NULL, (CVOpenGLESTextureCacheRef *)&_videoTextureCache);
+        if (err != noErr) {
+            goto failed;
+        }
+        CFRetain(_videoTextureCache);
+    }
+    
+    // Periodic texture cache flush every frame
+    CVOpenGLESTextureCacheFlush(_videoTextureCache, 0);
+    /* cleanUp Textures*/
+    if (_videoDestTexture) {
+        CFRelease(_videoDestTexture);
+        _videoDestTexture = NULL;
+    }
+    
+    glActiveTexture(GL_TEXTURE0);
+    CVReturn err;
+    
+    int frameWidth = (int)CVPixelBufferGetWidth(cvBufferRef);
+    int frameHeight = (int)CVPixelBufferGetHeight(cvBufferRef);
+    
+    err = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                       _videoTextureCache,
+                                                       cvBufferRef,
+                                                       NULL,
+                                                       GL_TEXTURE_2D,
+                                                       GL_RGBA,
+                                                       frameWidth,
+                                                       frameHeight,
+                                                       GL_BGRA,
+                                                       GL_UNSIGNED_BYTE,
+                                                       0,
+                                                       (CVOpenGLESTextureRef*)&_videoDestTexture);
+    if (err) {
+        goto failed;
+    }
+    
+    _texture = CVOpenGLESTextureGetName((CVOpenGLESTextureRef)_videoDestTexture);
+    
+    glBindTexture(CVOpenGLESTextureGetTarget((CVOpenGLESTextureRef)_videoDestTexture), CVOpenGLESTextureGetName((CVOpenGLESTextureRef)_videoDestTexture));
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+failed:
+    if (cvbFrame.cvBufferRef)
+        CVBufferRelease(cvbFrame.cvBufferRef);
+    return;
+}
+
+- (BOOL) prepareRender{
+    if (_texture == 0)
+        return NO;
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _texture);
+    glUniform1i(_uniformSampler, 0);
+    return YES;
+}
+
+- (void) dealloc
+{
+    if (_texture && glIsTexture(_texture))
+        glDeleteTextures(1, &_texture);
+    _texture = 0;
+    
+    if(_videoDestTexture) {
+        CFRelease(_videoDestTexture);
+        _videoDestTexture = NULL;
+    }
+    
+    if(_videoTextureCache) {
+        CFRelease(_videoTextureCache);
+        _videoTextureCache = NULL;
+    }
+}
+
+@end
+
 //////////////////////////////////////////////////////////
 
 #pragma mark - gl view
@@ -362,6 +480,7 @@ enum {
     GLint           _uniformMatrix;
     GLfloat         _vertices[8];
     
+    KxVideoFrameFormat    _rendererFormat;
     id<KxMovieGLRenderer> _renderer;
 }
 
@@ -378,12 +497,21 @@ enum {
         
         _decoder = decoder;
         
-        if ([decoder setupVideoFrameFormat:KxVideoFrameFormatYUV]) {
+        //if ([decoder setupVideoFrameFormat:KxVideoFrameFormatYUV]) {
+        [decoder setupVideoFrameFormat:KxVideoFrameFormatYUV];
+        _rendererFormat = [decoder getVideoFrameFormat];
+        if (_rendererFormat == KxVideoFrameFormatYUV){
             
             _renderer = [[KxMovieGLRenderer_YUV alloc] init];
             LoggerVideo(1, @"OK use YUV GL renderer");
             
-        } else {
+        }
+        else if (_rendererFormat == KxVideoFrameFormatCVBuffer){
+            
+            _renderer = [[KxMovieGLRenderer_CVBuffer alloc] init];
+            LoggerVideo(1, @"OK use CVBuffer renderer");
+        }
+        else {
             
             _renderer = [[KxMovieGLRenderer_RGB alloc] init];
             LoggerVideo(1, @"OK use RGB GL renderer");
@@ -430,12 +558,17 @@ enum {
             self = nil;
             return nil;
         }
-                
+        
+        if (_rendererFormat == KxVideoFrameFormatCVBuffer){
+            KxMovieGLRenderer_CVBuffer * cvb_render = (KxMovieGLRenderer_CVBuffer *)_renderer;
+            [cvb_render setEGLContext:_context];
+        }
+        
         if (![self loadShaders]) {
-            
             self = nil;
             return nil;
         }
+        
         
         _vertices[0] = -1.0f;  // x0
         _vertices[1] = -1.0f;  // y0
@@ -518,12 +651,16 @@ enum {
 	if (!vertShader)
         goto exit;
     
-	fragShader = compileShader(GL_FRAGMENT_SHADER, _renderer.fragmentShader);
-    if (!fragShader)
-        goto exit;
+    
+    if (![_renderer.fragmentShader isEqualToString:@""]){
+        fragShader = compileShader(GL_FRAGMENT_SHADER, _renderer.fragmentShader);
+        if (!fragShader)
+            goto exit;
+    }
     
 	glAttachShader(_program, vertShader);
-	glAttachShader(_program, fragShader);
+    if (fragShader)
+        glAttachShader(_program, fragShader);
 	glBindAttribLocation(_program, ATTRIBUTE_VERTEX, "position");
     glBindAttribLocation(_program, ATTRIBUTE_TEXCOORD, "texcoord");
 	

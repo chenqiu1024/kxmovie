@@ -12,8 +12,6 @@
 #import "AppDelegate.h"
 #import "MainViewController.h"
 
-#import "MyGLView.h"
-
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
